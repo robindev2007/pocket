@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+
 import '../../../../core/constants/app_constants.dart';
 import '../../../../core/constants/app_sizes.dart';
 import '../../../../core/theme/theme.dart';
@@ -31,7 +32,10 @@ class ProfileTab extends StatelessWidget {
         final totalExpenses = controller.totalExpenses;
 
         return ScreenContainer(
-          padding: const EdgeInsets.symmetric(horizontal: AppSizes.p16, vertical: AppSizes.p16),
+          padding: const EdgeInsets.symmetric(
+            horizontal: AppSizes.p16,
+            vertical: AppSizes.p16,
+          ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -44,7 +48,9 @@ class ProfileTab extends StatelessWidget {
                       children: [
                         CircleAvatar(
                           radius: 34,
-                          backgroundColor: colorScheme.primary.withValues(alpha: 0.12),
+                          backgroundColor: colorScheme.primary.withValues(
+                            alpha: 0.12,
+                          ),
                           child: Text(
                             avatar,
                             style: const TextStyle(fontSize: 32),
@@ -96,8 +102,6 @@ class ProfileTab extends StatelessWidget {
                       ],
                     ),
                     AppSizes.gapH16,
-                    const Divider(height: 1),
-                    AppSizes.gapH12,
                     AppButton.outline(
                       text: 'Edit Profile & Avatar',
                       prefixIcon: const Icon(Icons.edit_outlined, size: 16),
@@ -130,7 +134,10 @@ class ProfileTab extends StatelessWidget {
                         children: [
                           Text(
                             'Transactions',
-                            style: TextStyle(fontSize: 12, color: customColors.subtleText),
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: customColors.subtleText,
+                            ),
                           ),
                           AppSizes.gapH4,
                           Text(
@@ -154,7 +161,10 @@ class ProfileTab extends StatelessWidget {
                         children: [
                           Text(
                             'Active Debts',
-                            style: TextStyle(fontSize: 12, color: customColors.subtleText),
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: customColors.subtleText,
+                            ),
                           ),
                           AppSizes.gapH4,
                           Text(
@@ -187,7 +197,9 @@ class ProfileTab extends StatelessWidget {
                 BorderlessCard(
                   child: Column(
                     children: spendingByTag.entries.map((entry) {
-                      final percentage = totalExpenses > 0 ? (entry.value / totalExpenses) : 0.0;
+                      final percentage = totalExpenses > 0
+                          ? (entry.value / totalExpenses)
+                          : 0.0;
                       return Padding(
                         padding: const EdgeInsets.symmetric(vertical: 6),
                         child: Column(
@@ -221,7 +233,9 @@ class ProfileTab extends StatelessWidget {
                                 value: percentage,
                                 minHeight: 5,
                                 backgroundColor: customColors.surfaceHover,
-                                valueColor: AlwaysStoppedAnimation<Color>(colorScheme.primary),
+                                valueColor: AlwaysStoppedAnimation<Color>(
+                                  colorScheme.primary,
+                                ),
                               ),
                             ),
                           ],
@@ -260,7 +274,9 @@ class ProfileTab extends StatelessWidget {
                         ),
                         const SizedBox(height: 2),
                         Text(
-                          context.isDarkMode ? 'Dark Mode Active' : 'Light Mode Active',
+                          context.isDarkMode
+                              ? 'Dark Mode Active'
+                              : 'Light Mode Active',
                           style: TextStyle(
                             fontSize: 12,
                             color: customColors.subtleText,
@@ -273,13 +289,15 @@ class ProfileTab extends StatelessWidget {
                         AppFilterPill(
                           label: 'Light',
                           isSelected: !context.isDarkMode,
-                          onTap: () => themeController.setThemeMode(ThemeMode.light),
+                          onTap: () =>
+                              themeController.setThemeMode(ThemeMode.light),
                         ),
                         AppSizes.gapW8,
                         AppFilterPill(
                           label: 'Dark',
                           isSelected: context.isDarkMode,
-                          onTap: () => themeController.setThemeMode(ThemeMode.dark),
+                          onTap: () =>
+                              themeController.setThemeMode(ThemeMode.dark),
                         ),
                       ],
                     ),
@@ -304,7 +322,10 @@ class ProfileTab extends StatelessWidget {
                   children: [
                     Text(
                       'Export your entire database to JSON or restore from an existing backup.',
-                      style: TextStyle(fontSize: 12.5, color: customColors.subtleText),
+                      style: TextStyle(
+                        fontSize: 12.5,
+                        color: customColors.subtleText,
+                      ),
                     ),
                     AppSizes.gapH12,
                     AppButton.outline(
@@ -321,7 +342,10 @@ class ProfileTab extends StatelessWidget {
               Center(
                 child: Text(
                   '${AppConstants.appName} • 100% Private & Local',
-                  style: TextStyle(fontSize: 12, color: customColors.subtleText),
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: customColors.subtleText,
+                  ),
                 ),
               ),
               AppSizes.gapH20,

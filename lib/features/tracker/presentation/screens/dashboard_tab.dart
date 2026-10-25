@@ -6,6 +6,7 @@ import '../../../../core/theme/theme.dart';
 import '../../../../core/utils/currency_formatter.dart';
 import '../../../../core/widgets/widgets.dart';
 import '../../controllers/tracker_controller.dart';
+import '../dialogs/add_edit_transaction_dialog.dart';
 
 class DashboardTab extends StatefulWidget {
   const DashboardTab({super.key, required this.onNavigateToTransactions});
@@ -51,6 +52,14 @@ class _DashboardTabState extends State<DashboardTab> {
 
     return Scaffold(
       backgroundColor: Colors.transparent,
+      floatingActionButton: FloatingActionButton.extended(
+        backgroundColor: colorScheme.primary,
+        foregroundColor: colorScheme.onPrimary,
+        elevation: 2,
+        onPressed: () => AddEditTransactionDialog.show(context),
+        icon: const Icon(Icons.add, size: 20),
+        label: const Text('Add Transaction', style: TextStyle(fontWeight: FontWeight.w600)),
+      ),
       body: Obx(() {
         final cashBalance = controller.cashBalance;
         final totalIncome = controller.totalIncome;

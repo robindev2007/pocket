@@ -13,8 +13,8 @@ class StorageService {
   SharedPreferences? _prefs;
 
   Future<void> init() async {
-    _prefs ??= await SharedPreferences.getInstance();
     try {
+      _prefs ??= await SharedPreferences.getInstance();
       await _prefs?.reload();
     } catch (_) {}
   }

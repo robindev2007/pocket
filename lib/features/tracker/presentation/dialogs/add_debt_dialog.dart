@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:luthor/luthor.dart';
 import '../../../../core/constants/app_constants.dart';
 import '../../../../core/constants/app_sizes.dart';
 import '../../../../core/theme/theme.dart';
@@ -39,7 +40,37 @@ class _AddDebtDialogState extends State<AddDebtDialog> {
 
   late DebtDirection _selectedDirection;
   late DateTime _selectedDate;
-  String? _errorMessage;
+  String? _personError;
+  String? _titleError;
+  String? _amountError;
+
+  // Zod-like schema using Luthor
+  static final _debtSchema = l.schema({
+    'person': l
+        .string()
+        .required(message: 'Please enter or select a person')
+        .min(1, message: 'Please enter or select a person')
+        .custom(
+          (value) => value.trim().isNotEmpty,
+          message: 'Please enter or select a person',
+        ),
+    'title': l
+        .string()
+        .required(message: 'Please enter a title')
+        .min(1, message: 'Please enter a title')
+        .custom(
+          (value) => value.trim().isNotEmpty,
+          message: 'Please enter a title',
+        ),
+    'amount': l
+        .string()
+        .required(message: 'Please enter an amount')
+        .min(1, message: 'Please enter an amount')
+        .custom((value) {
+          final parsed = double.tryParse(value.trim());
+          return parsed != null && parsed > 0;
+        }, message: 'Enter a valid amount greater than 0'),
+  });
 
   @override
   void initState() {
@@ -75,23 +106,34 @@ class _AddDebtDialogState extends State<AddDebtDialog> {
   }
 
   void _submit() {
+    final rawData = {
+      'person': _personController.text.trim(),
+      'title': _titleController.text.trim(),
+      'amount': _amountController.text.trim(),
+    };
+
+    final result = _debtSchema.validate(rawData);
+
+    if (!result.isValid) {
+      setState(() {
+        _personError = result.getError('person');
+        _titleError = result.getError('title');
+        _amountError = result.getError('amount');
+      });
+      return;
+    }
+
+    if (_personError != null || _titleError != null || _amountError != null) {
+      setState(() {
+        _personError = null;
+        _titleError = null;
+        _amountError = null;
+      });
+    }
+
     final person = _personController.text.trim();
     final title = _titleController.text.trim();
-    final amountText = _amountController.text.trim();
-    final parsedAmount = double.tryParse(amountText);
-
-    if (person.isEmpty) {
-      setState(() => _errorMessage = 'Please enter or select a person');
-      return;
-    }
-    if (title.isEmpty) {
-      setState(() => _errorMessage = 'Please enter a title');
-      return;
-    }
-    if (parsedAmount == null || parsedAmount <= 0) {
-      setState(() => _errorMessage = 'Please enter a valid amount');
-      return;
-    }
+    final parsedAmount = double.parse(_amountController.text.trim());
 
     final note = _noteController.text.trim().isNotEmpty
         ? _noteController.text.trim()
@@ -116,7 +158,7 @@ class _AddDebtDialogState extends State<AddDebtDialog> {
     final bottomInset = MediaQuery.of(context).viewInsets.bottom;
     final controller = TrackerController.to;
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final softInputFill = isDark ? Colors.white.withValues(alpha: 0.07) : const Color(0xFFF1F5F9);
+    final softInputFill = customColors.inputFill;
 
     return Container(
       decoration: BoxDecoration(
@@ -199,6 +241,12 @@ class _AddDebtDialogState extends State<AddDebtDialog> {
               controller: _personController,
               label: 'Person Name',
               hint: 'e.g. John, Sarah, Brother',
+              errorText: _personError,
+              onChanged: (_) {
+                if (_personError != null) {
+                  setState(() => _personError = null);
+                }
+              },
               prefixIcon: const Icon(Icons.person_outline, size: 20),
             ),
 
@@ -216,6 +264,7 @@ class _AddDebtDialogState extends State<AddDebtDialog> {
                     onTap: () {
                       setState(() {
                         _personController.text = p;
+                        _personError = null;
                       });
                     },
                   );
@@ -231,6 +280,12 @@ class _AddDebtDialogState extends State<AddDebtDialog> {
               hint: _selectedDirection == DebtDirection.theyOweMe
                   ? 'e.g. Lunch split, Lent cash'
                   : 'e.g. Borrowed for emergency, Rent share',
+              errorText: _titleError,
+              onChanged: (_) {
+                if (_titleError != null) {
+                  setState(() => _titleError = null);
+                }
+              },
             ),
             AppSizes.gapH16,
 
@@ -239,6 +294,12 @@ class _AddDebtDialogState extends State<AddDebtDialog> {
               controller: _amountController,
               label: 'Amount (${AppConstants.currencySymbol})',
               hint: '0.00',
+              errorText: _amountError,
+              onChanged: (_) {
+                if (_amountError != null) {
+                  setState(() => _amountError = null);
+                }
+              },
               prefixIcon: const Padding(
                 padding: EdgeInsets.symmetric(horizontal: 12),
                 child: Center(
@@ -295,14 +356,6 @@ class _AddDebtDialogState extends State<AddDebtDialog> {
               hint: 'Additional terms or memo...',
               maxLines: 2,
             ),
-
-            if (_errorMessage != null) ...[
-              AppSizes.gapH12,
-              Text(
-                _errorMessage!,
-                style: const TextStyle(color: Colors.red, fontSize: 13),
-              ),
-            ],
 
             AppSizes.gapH24,
 

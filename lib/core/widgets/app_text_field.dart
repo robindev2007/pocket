@@ -99,13 +99,14 @@ class AppTextField extends StatelessWidget {
     }
 
     final focusedBorderColor = theme.colorScheme.primary;
-    final errorBorderColor = theme.colorScheme.error;
+    const simpleRed = Color(0xFFEF4444); // Simple modern red for validation borders
 
     // Clean, modern soft fill color
     final effectiveFillColor = fillColor ??
+        customColors?.inputFill ??
         (isDark
-            ? Colors.white.withValues(alpha: 0.07)
-            : const Color(0xFFF1F5F9));
+            ? Colors.white.withValues(alpha: 0.14)
+            : const Color(0xFFF8FAFC));
 
     final inputField = TextFormField(
       controller: controller,
@@ -133,7 +134,7 @@ class AppTextField extends StatelessWidget {
         hintText: hint,
         hintStyle: TextStyle(
           color: isDark
-              ? Colors.white.withValues(alpha: 0.35)
+              ? Colors.white.withValues(alpha: 0.45)
               : const Color(0xFF94A3B8),
           fontSize: fontSize,
           fontWeight: FontWeight.w400,
@@ -145,9 +146,9 @@ class AppTextField extends StatelessWidget {
           fontSize: 11.5,
         ),
         errorText: errorText,
-        errorStyle: TextStyle(
-          color: errorBorderColor,
-          fontSize: 11.5,
+        errorStyle: const TextStyle(
+          color: simpleRed,
+          fontSize: 12,
           fontWeight: FontWeight.w500,
         ),
         prefixIcon: prefixIcon != null
@@ -194,15 +195,15 @@ class AppTextField extends StatelessWidget {
         ),
         errorBorder: OutlineInputBorder(
           borderRadius: effectiveRadius,
-          borderSide: BorderSide(
-            color: errorBorderColor.withValues(alpha: 0.6),
-            width: 1,
+          borderSide: const BorderSide(
+            color: simpleRed,
+            width: 1.0,
           ),
         ),
         focusedErrorBorder: OutlineInputBorder(
           borderRadius: effectiveRadius,
-          borderSide: BorderSide(
-            color: errorBorderColor,
+          borderSide: const BorderSide(
+            color: simpleRed,
             width: 1.2,
           ),
         ),

@@ -28,8 +28,8 @@ class AppTheme {
         ? const Color(0xFF1E293B)
         : const Color(0xFFE2E8F0);
     final inputFill = isDark
-        ? Colors.white.withValues(alpha: 0.07)
-        : const Color(0xFFF1F5F9);
+        ? Colors.white.withValues(alpha: 0.14)
+        : const Color(0xFFF8FAFC);
     const inputBorder = Colors.transparent;
     final subtleText = isDark
         ? const Color(0xFF94A3B8)

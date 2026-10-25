@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:luthor/luthor.dart';
+
 import '../../../../core/constants/app_constants.dart';
 import '../../../../core/constants/app_sizes.dart';
 import '../../../../core/theme/theme.dart';
@@ -47,7 +49,28 @@ class _AddEditTransactionDialogState extends State<AddEditTransactionDialog> {
   late TransactionType _selectedType;
   late DateTime _selectedDate;
   String? _selectedTag;
-  String? _errorMessage;
+  String? _titleError;
+  String? _amountError;
+
+  // Zod-like schema using Luthor
+  static final _transactionSchema = l.schema({
+    'amount': l
+        .string()
+        .required(message: 'Please enter an amount')
+        .min(1, message: 'Please enter an amount')
+        .custom((value) {
+          final parsed = double.tryParse(value.trim());
+          return parsed != null && parsed > 0;
+        }, message: 'Enter a valid amount greater than 0'),
+    'title': l
+        .string()
+        .required(message: 'Please enter a title')
+        .min(1, message: 'Please enter a title')
+        .custom(
+          (value) => value.trim().isNotEmpty,
+          message: 'Please enter a title',
+        ),
+  });
 
   bool get isEditing => widget.transactionToEdit != null;
 
@@ -61,7 +84,11 @@ class _AddEditTransactionDialogState extends State<AddEditTransactionDialog> {
 
     _titleController = TextEditingController(text: edit?.title ?? '');
     _amountController = TextEditingController(
-      text: edit != null ? edit.amount.toStringAsFixed(edit.amount.truncateToDouble() == edit.amount ? 0 : 2) : '',
+      text: edit != null
+          ? edit.amount.toStringAsFixed(
+              edit.amount.truncateToDouble() == edit.amount ? 0 : 2,
+            )
+          : '',
     );
     _tagController = TextEditingController(text: edit?.tag ?? '');
     _noteController = TextEditingController(text: edit?.note ?? '');
@@ -89,24 +116,36 @@ class _AddEditTransactionDialogState extends State<AddEditTransactionDialog> {
   }
 
   void _submit() {
-    final title = _titleController.text.trim();
-    final amountText = _amountController.text.trim();
-    final parsedAmount = double.tryParse(amountText);
+    final rawData = {
+      'amount': _amountController.text.trim(),
+      'title': _titleController.text.trim(),
+    };
 
-    if (title.isEmpty) {
-      setState(() => _errorMessage = 'Please enter a title');
+    final result = _transactionSchema.validate(rawData);
+
+    if (!result.isValid) {
+      setState(() {
+        _amountError = result.getError('amount');
+        _titleError = result.getError('title');
+      });
       return;
     }
-    if (parsedAmount == null || parsedAmount <= 0) {
-      setState(() => _errorMessage = 'Please enter a valid amount');
-      return;
+
+    if (_amountError != null || _titleError != null) {
+      setState(() {
+        _amountError = null;
+        _titleError = null;
+      });
     }
+
+    final title = _titleController.text.trim();
+    final parsedAmount = double.parse(_amountController.text.trim());
 
     final tag = _selectedTag?.trim().isNotEmpty == true
         ? _selectedTag
         : _tagController.text.trim().isNotEmpty
-            ? _tagController.text.trim()
-            : null;
+        ? _tagController.text.trim()
+        : null;
 
     final note = _noteController.text.trim().isNotEmpty
         ? _noteController.text.trim()
@@ -156,7 +195,7 @@ class _AddEditTransactionDialogState extends State<AddEditTransactionDialog> {
         : AppConstants.defaultExpenseTags;
 
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final softInputFill = isDark ? Colors.white.withValues(alpha: 0.07) : const Color(0xFFF1F5F9);
+    final softInputFill = customColors.inputFill;
 
     return Container(
       decoration: BoxDecoration(
@@ -210,7 +249,10 @@ class _AddEditTransactionDialogState extends State<AddEditTransactionDialog> {
                 Expanded(
                   child: AppButton(
                     text: 'Income',
-                    prefixIcon: const Icon(Icons.arrow_downward_rounded, size: 16),
+                    prefixIcon: const Icon(
+                      Icons.arrow_downward_rounded,
+                      size: 16,
+                    ),
                     variant: _selectedType == TransactionType.income
                         ? ButtonVariant.primary
                         : ButtonVariant.outline,
@@ -232,7 +274,10 @@ class _AddEditTransactionDialogState extends State<AddEditTransactionDialog> {
                 Expanded(
                   child: AppButton(
                     text: 'Expense',
-                    prefixIcon: const Icon(Icons.arrow_upward_rounded, size: 16),
+                    prefixIcon: const Icon(
+                      Icons.arrow_upward_rounded,
+                      size: 16,
+                    ),
                     variant: _selectedType == TransactionType.expense
                         ? ButtonVariant.primary
                         : ButtonVariant.outline,
@@ -259,6 +304,12 @@ class _AddEditTransactionDialogState extends State<AddEditTransactionDialog> {
               controller: _amountController,
               label: 'Amount (${AppConstants.currencySymbol})',
               hint: '0.00',
+              errorText: _amountError,
+              onChanged: (_) {
+                if (_amountError != null) {
+                  setState(() => _amountError = null);
+                }
+              },
               prefixIcon: const Padding(
                 padding: EdgeInsets.symmetric(horizontal: 12),
                 child: Center(
@@ -269,7 +320,9 @@ class _AddEditTransactionDialogState extends State<AddEditTransactionDialog> {
                   ),
                 ),
               ),
-              keyboardType: const TextInputType.numberWithOptions(decimal: true),
+              keyboardType: const TextInputType.numberWithOptions(
+                decimal: true,
+              ),
               textInputAction: TextInputAction.next,
             ),
             AppSizes.gapH16,
@@ -281,6 +334,12 @@ class _AddEditTransactionDialogState extends State<AddEditTransactionDialog> {
               hint: _selectedType == TransactionType.income
                   ? 'e.g. Monthly Salary, Freelance Gig'
                   : 'e.g. Dinner, Grocery Shopping, Rent',
+              errorText: _titleError,
+              onChanged: (_) {
+                if (_titleError != null) {
+                  setState(() => _titleError = null);
+                }
+              },
               textInputAction: TextInputAction.next,
             ),
             AppSizes.gapH16,
@@ -299,21 +358,36 @@ class _AddEditTransactionDialogState extends State<AddEditTransactionDialog> {
               onTap: _pickDate,
               borderRadius: BorderRadius.circular(14),
               child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 13),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 14,
+                  vertical: 13,
+                ),
                 decoration: BoxDecoration(
                   color: softInputFill,
                   borderRadius: BorderRadius.circular(14),
                 ),
                 child: Row(
                   children: [
-                    Icon(Icons.calendar_today_outlined, size: 18, color: customColors.subtleText),
+                    Icon(
+                      Icons.calendar_today_outlined,
+                      size: 18,
+                      color: customColors.subtleText,
+                    ),
                     AppSizes.gapW12,
                     Text(
                       CurrencyFormatter.formatDate(_selectedDate),
-                      style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500, color: colorScheme.onSurface),
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w500,
+                        color: colorScheme.onSurface,
+                      ),
                     ),
                     const Spacer(),
-                    Icon(Icons.chevron_right, size: 18, color: customColors.subtleText),
+                    Icon(
+                      Icons.chevron_right,
+                      size: 18,
+                      color: customColors.subtleText,
+                    ),
                   ],
                 ),
               ),
@@ -357,18 +431,11 @@ class _AddEditTransactionDialogState extends State<AddEditTransactionDialog> {
               maxLines: 2,
             ),
 
-            if (_errorMessage != null) ...[
-              AppSizes.gapH12,
-              Text(
-                _errorMessage!,
-                style: const TextStyle(color: Colors.red, fontSize: 13),
-              ),
-            ],
-
             AppSizes.gapH24,
 
             // Submit Button
             AppButton(
+              size: ButtonSize.lg,
               text: isEditing ? 'Save Changes' : 'Save Transaction',
               isFullWidth: true,
               onPressed: _submit,

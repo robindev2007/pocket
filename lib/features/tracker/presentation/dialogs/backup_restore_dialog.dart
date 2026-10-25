@@ -89,7 +89,7 @@ class _BackupRestoreDialogState extends State<BackupRestoreDialog> {
     final bottomInset = MediaQuery.of(context).viewInsets.bottom;
 
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final softInputFill = isDark ? Colors.white.withValues(alpha: 0.07) : const Color(0xFFF1F5F9);
+    final softInputFill = customColors.inputFill;
 
     return Container(
       decoration: BoxDecoration(

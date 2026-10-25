@@ -16,7 +16,9 @@ class ThemeController extends GetxController {
   @override
   void onInit() {
     super.onInit();
-    _loadSavedTheme();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _loadSavedTheme();
+    });
   }
 
   Future<void> _loadSavedTheme() async {

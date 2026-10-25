@@ -1,3 +1,4 @@
+import 'package:flutter/widgets.dart';
 import 'package:get/get.dart';
 import '../../../data/models/debt_model.dart';
 import '../../../data/models/transaction_model.dart';
@@ -44,7 +45,9 @@ class TrackerController extends GetxController {
   @override
   void onInit() {
     super.onInit();
-    loadAllData();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      loadAllData();
+    });
   }
 
   Future<void> loadAllData() async {

@@ -2,9 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
 import '../../../../core/theme/theme.dart';
-import '../../../../data/models/transaction_model.dart';
 import '../../controllers/tracker_controller.dart';
-import '../dialogs/add_edit_transaction_dialog.dart';
 import '../dialogs/welcome_name_dialog.dart';
 import 'dashboard_tab.dart';
 import 'debts_tab.dart';
@@ -24,6 +22,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
   @override
   void initState() {
     super.initState();
+    Get.put(TrackerController());
     _checkFirstLaunchOnboarding();
   }
 
@@ -47,7 +46,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final controller = Get.put(TrackerController());
+    final controller = TrackerController.to;
     final themeController = ThemeController.to;
     final colorScheme = context.colorScheme;
     final customColors = context.customColors;
@@ -140,40 +139,9 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
           const ProfileTab(),
         ],
       ),
-      // Floating Action Button shown ONLY on Home dashboard (tab 0)
-      floatingActionButton: _currentIndex == 0
-          ? Container(
-              margin: const EdgeInsets.only(bottom: 6),
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(18),
-                boxShadow: [
-                  BoxShadow(
-                    color: colorScheme.primary.withValues(alpha: 0.45),
-                    blurRadius: 16,
-                    offset: const Offset(0, 6),
-                  ),
-                ],
-              ),
-              child: FloatingActionButton(
-                backgroundColor: colorScheme.primary,
-                foregroundColor: Colors.white,
-                elevation: 0,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(18),
-                ),
-                onPressed: () => AddEditTransactionDialog.show(
-                  context,
-                  initialType: TransactionType.expense,
-                ),
-                child: const Icon(Icons.add, size: 28),
-              ),
-            )
-          : null,
-      // Clean, Minimal Bottom Bar matching screenshot
+      // Standard, production-grade Flutter BottomNavigationBar
       bottomNavigationBar: Container(
-        height: 52,
         decoration: BoxDecoration(
-          color: isDark ? const Color(0xFF0F1420) : Colors.white,
           border: Border(
             top: BorderSide(
               color: isDark
@@ -183,92 +151,44 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
             ),
           ),
         ),
-        child: SafeArea(
-          top: false,
-          child: Row(
-            children: [
-              _NavBarItem(
-                icon: Icons.home_outlined,
-                activeIcon: Icons.home_rounded,
-                label: 'HOME',
-                isSelected: _currentIndex == 0,
-                onTap: () => _onTabTapped(0),
-              ),
-              _NavBarItem(
-                icon: Icons.bar_chart_outlined,
-                activeIcon: Icons.bar_chart_rounded,
-                label: 'STATS',
-                isSelected: _currentIndex == 1,
-                onTap: () => _onTabTapped(1),
-              ),
-              _NavBarItem(
-                icon: Icons.account_balance_wallet_outlined,
-                activeIcon: Icons.account_balance_wallet_rounded,
-                label: 'DEBTS',
-                isSelected: _currentIndex == 2,
-                onTap: () => _onTabTapped(2),
-              ),
-              _NavBarItem(
-                icon: Icons.person_outline_rounded,
-                activeIcon: Icons.person_rounded,
-                label: 'PROFILE',
-                isSelected: _currentIndex == 3,
-                onTap: () => _onTabTapped(3),
-              ),
-            ],
+        child: BottomNavigationBar(
+          currentIndex: _currentIndex,
+          onTap: _onTabTapped,
+          backgroundColor: isDark ? const Color(0xFF0F1420) : Colors.white,
+          elevation: 0,
+          type: BottomNavigationBarType.fixed,
+          selectedItemColor: const Color(0xFF3B82F6),
+          unselectedItemColor: customColors.subtleText,
+          selectedFontSize: 10,
+          unselectedFontSize: 10,
+          selectedLabelStyle: const TextStyle(
+            fontWeight: FontWeight.w800,
+            letterSpacing: 0.6,
           ),
-        ),
-      ),
-    );
-  }
-}
-
-class _NavBarItem extends StatelessWidget {
-  const _NavBarItem({
-    required this.icon,
-    required this.activeIcon,
-    required this.label,
-    required this.isSelected,
-    required this.onTap,
-  });
-
-  final IconData icon;
-  final IconData activeIcon;
-  final String label;
-  final bool isSelected;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final customColors = context.customColors;
-
-    const activeColor = Color(0xFF3B82F6);
-    final inactiveColor = customColors.subtleText;
-
-    return Expanded(
-      child: InkWell(
-        onTap: onTap,
-        splashColor: Colors.transparent,
-        highlightColor: Colors.transparent,
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              isSelected ? activeIcon : icon,
-              size: 22,
-              color: isSelected ? activeColor : inactiveColor,
+          unselectedLabelStyle: const TextStyle(
+            fontWeight: FontWeight.w600,
+            letterSpacing: 0.6,
+          ),
+          items: const [
+            BottomNavigationBarItem(
+              icon: Icon(Icons.home_outlined, size: 22),
+              activeIcon: Icon(Icons.home_rounded, size: 22),
+              label: 'HOME',
             ),
-            const SizedBox(height: 3),
-            Text(
-              label,
-              style: TextStyle(
-                fontSize: 10,
-                fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
-                color: isSelected ? activeColor : inactiveColor,
-                letterSpacing: 0.6,
-              ),
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
+            BottomNavigationBarItem(
+              icon: Icon(Icons.bar_chart_outlined, size: 22),
+              activeIcon: Icon(Icons.bar_chart_rounded, size: 22),
+              label: 'STATS',
+            ),
+            BottomNavigationBarItem(
+              icon: Icon(Icons.account_balance_wallet_outlined, size: 22),
+              activeIcon: Icon(Icons.account_balance_wallet_rounded, size: 22),
+              label: 'DEBTS',
+            ),
+            BottomNavigationBarItem(
+              icon: Icon(Icons.person_outline_rounded, size: 22),
+              activeIcon: Icon(Icons.person_rounded, size: 22),
+              label: 'PROFILE',
             ),
           ],
         ),

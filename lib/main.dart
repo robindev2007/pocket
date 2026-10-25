@@ -5,7 +5,6 @@ import 'features/tracker/tracker.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
-  Get.put(ThemeController());
   runApp(const MyApp());
 }
 
@@ -14,7 +13,7 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final themeController = ThemeController.to;
+    final themeController = Get.put(ThemeController());
 
     return Obx(() {
       return GetMaterialApp(
