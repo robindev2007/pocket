@@ -4,6 +4,7 @@ import { usersRouter } from './users/users.route';
 import { transactionsRouter } from './transactions/transactions.route';
 import { debtsRouter } from './debts/debts.route';
 import { peopleRouter } from './people/people.route';
+import { syncRouter } from './sync/sync.route';
 import { errorMiddleware, loggerMiddleware, notFoundMiddleware } from './common/middleware';
 
 // Safely serialize BigInt to string in JSON responses
@@ -42,6 +43,7 @@ export const createApp = (): Application => {
   app.use('/transactions', transactionsRouter);
   app.use('/debts', debtsRouter);
   app.use('/people', peopleRouter);
+  app.use('/sync', syncRouter);
 
   // 404 Not Found Middleware (catches unhandled routes)
   app.use(notFoundMiddleware);

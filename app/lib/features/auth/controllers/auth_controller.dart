@@ -5,6 +5,7 @@ import '../../../core/constants/api_constants.dart';
 import '../../../data/models/user_profile_model.dart';
 import '../../../data/services/auth_api_service.dart';
 import '../../../data/services/storage_service.dart';
+import '../../sync/controllers/sync_controller.dart';
 import '../../tracker/controllers/tracker_controller.dart';
 
 class AuthController extends GetxController {
@@ -54,6 +55,9 @@ class AuthController extends GetxController {
       if (user != null) {
         authUser.value = user;
         isAuthenticated.value = true;
+        if (Get.isRegistered<SyncController>()) {
+          SyncController.to.hydrateFromServer(token);
+        }
       } else {
         // Token expired or invalid
         await _storageService.clearAuthToken();
@@ -94,8 +98,9 @@ class AuthController extends GetxController {
       // 3. Authenticate with backend server
       final AuthResult result = await _apiService.signInWithGoogle(idToken);
 
-      // 4. Save session token
+      // 4. Save session token and handle account switching
       await _storageService.saveAuthToken(result.accessToken);
+      await _storageService.handleAccountSwitch(result.user.id);
 
       // 5. Update local state
       authUser.value = result.user;
@@ -112,6 +117,11 @@ class AuthController extends GetxController {
           currency: result.user.currency,
           hasCompletedOnboarding: true,
         );
+      }
+
+      // 7. Hydrate newest cloud transactions and debts from server
+      if (Get.isRegistered<SyncController>()) {
+        await SyncController.to.hydrateFromServer(result.accessToken);
       }
 
       Get.snackbar(

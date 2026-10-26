@@ -10,6 +10,7 @@ class StorageService {
   static const String _keyPeople = 'mm_people';
   static const String _keyUserProfile = 'mm_user_profile';
   static const String _keyAuthToken = 'mm_auth_jwt_token';
+  static const String _keyLastUserId = 'mm_last_user_id';
 
   SharedPreferences? _prefs;
 
@@ -114,6 +115,26 @@ class StorageService {
   Future<bool> hasAuthToken() async {
     final token = await loadAuthToken();
     return token != null && token.isNotEmpty;
+  }
+
+  /// Checks if the signed-in user is different from the last active user.
+  /// If an account switch occurred, clears prior local financial records to ensure isolation.
+  Future<void> handleAccountSwitch(String? newUserId) async {
+    if (newUserId == null || newUserId.isEmpty) return;
+    await init();
+    final lastUserId = _prefs?.getString(_keyLastUserId);
+    if (lastUserId != null && lastUserId.isNotEmpty && lastUserId != newUserId) {
+      await clearFinancialData();
+    }
+    await _prefs?.setString(_keyLastUserId, newUserId);
+  }
+
+  /// Clears local financial transactions, debts, and people
+  Future<void> clearFinancialData() async {
+    await init();
+    await _prefs?.remove(_keyTransactions);
+    await _prefs?.remove(_keyDebts);
+    await _prefs?.remove(_keyPeople);
   }
 
   // --- Backup & Restore (JSON) ---

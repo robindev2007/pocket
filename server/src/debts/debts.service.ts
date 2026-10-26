@@ -136,6 +136,30 @@ export class DebtsService {
   }
 
   /**
+   * Retrieves all non-deleted debts with active repayments for cloud sync hydration
+   */
+  async findAllForSync(userId: string, since?: Date): Promise<DebtResponse[]> {
+    const where: Prisma.DebtWhereInput = {
+      userId,
+      isDeleted: false,
+      ...(since ? { updatedAt: { gte: since } } : {}),
+    };
+
+    const records = await prisma.debt.findMany({
+      where,
+      include: {
+        repayments: {
+          where: { isDeleted: false },
+          orderBy: { date: 'asc' },
+        },
+      },
+      orderBy: [{ isSettled: 'asc' }, { date: 'desc' }, { createdAt: 'desc' }],
+    });
+
+    return records.map((r) => this.mapDebt(r, r.repayments));
+  }
+
+  /**
    * Lists debts for the user with filters and pagination
    */
   async getDebts(

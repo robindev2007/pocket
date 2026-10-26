@@ -18,8 +18,14 @@ enum SyncState {
 class SyncController extends GetxController {
   static SyncController get to => Get.find<SyncController>();
 
-  final StorageService _storageService = StorageService();
-  final SyncApiService _syncApiService = SyncApiService();
+  final StorageService _storageService;
+  final SyncApiService _syncApiService;
+
+  SyncController({
+    StorageService? storageService,
+    SyncApiService? syncApiService,
+  })  : _storageService = storageService ?? StorageService(),
+        _syncApiService = syncApiService ?? SyncApiService();
 
   final Rx<SyncState> state = SyncState.idle.obs;
   final RxInt pendingCount = 0.obs;
@@ -33,15 +39,17 @@ class SyncController extends GetxController {
     super.onInit();
 
     // Listen to auth changes
-    ever(AuthController.to.isAuthenticated, (isAuth) {
-      if (isAuth) {
-        checkPendingStatus();
-        syncPendingItems();
-      } else {
-        state.value = SyncState.idle;
-        pendingCount.value = 0;
-      }
-    });
+    if (Get.isRegistered<AuthController>()) {
+      ever(AuthController.to.isAuthenticated, (isAuth) {
+        if (isAuth) {
+          checkPendingStatus();
+          syncPendingItems();
+        } else {
+          state.value = SyncState.idle;
+          pendingCount.value = 0;
+        }
+      });
+    }
 
     // Listen to changes in transactions or debts
     if (Get.isRegistered<TrackerController>()) {
@@ -57,7 +65,8 @@ class SyncController extends GetxController {
   }
 
   void checkPendingStatus() {
-    if (!AuthController.to.isAuthenticated.value) {
+    if (!Get.isRegistered<AuthController>() ||
+        !AuthController.to.isAuthenticated.value) {
       state.value = SyncState.idle;
       pendingCount.value = 0;
       return;
@@ -77,9 +86,110 @@ class SyncController extends GetxController {
     }
   }
 
+  /// Pulls the newest transactions and debts from the cloud and merges them with local state.
+  /// Any offline items created locally (!isSynced) are preserved and pushed up.
+  Future<bool> hydrateFromServer(String token) async {
+    if (isSyncing) return false;
+
+    state.value = SyncState.syncing;
+    lastError.value = '';
+
+    try {
+      final data = await _syncApiService.pullRemoteData(token);
+      if (data == null) {
+        state.value = SyncState.error;
+        return false;
+      }
+
+      if (!Get.isRegistered<TrackerController>()) return false;
+      final tracker = TrackerController.to;
+
+      // 1. Parse remote transactions
+      final remoteTxList = <TransactionModel>[];
+      if (data['transactions'] is List) {
+        for (final item in data['transactions']) {
+          try {
+            remoteTxList.add(
+              TransactionModel.fromJson(item as Map<String, dynamic>)
+                  .copyWith(isSynced: true),
+            );
+          } catch (_) {}
+        }
+      }
+
+      // 2. Parse remote debts
+      final remoteDebtList = <DebtModel>[];
+      if (data['debts'] is List) {
+        for (final item in data['debts']) {
+          try {
+            remoteDebtList.add(
+              DebtModel.fromJson(item as Map<String, dynamic>)
+                  .copyWith(isSynced: true),
+            );
+          } catch (_) {}
+        }
+      }
+
+      // 3. Merge Transactions: cloud items + local offline items
+      final mergedTxMap = <String, TransactionModel>{};
+      for (final tx in remoteTxList) {
+        mergedTxMap[tx.id] = tx;
+      }
+      for (final local in tracker.transactions) {
+        if (!local.isSynced && !mergedTxMap.containsKey(local.id)) {
+          mergedTxMap[local.id] = local;
+        }
+      }
+      final mergedTx = mergedTxMap.values.toList()
+        ..sort((a, b) => b.date.compareTo(a.date));
+
+      // 4. Merge Debts: cloud items + local offline items
+      final mergedDebtMap = <String, DebtModel>{};
+      for (final debt in remoteDebtList) {
+        mergedDebtMap[debt.id] = debt;
+      }
+      for (final local in tracker.debts) {
+        if (!local.isSynced && !mergedDebtMap.containsKey(local.id)) {
+          mergedDebtMap[local.id] = local;
+        }
+      }
+      final mergedDebts = mergedDebtMap.values.toList()
+        ..sort((a, b) => b.date.compareTo(a.date));
+
+      // 5. Update TrackerController & persist to storage
+      tracker.transactions.assignAll(mergedTx);
+      tracker.debts.assignAll(mergedDebts);
+      await _storageService.saveTransactions(mergedTx);
+      await _storageService.saveDebts(mergedDebts);
+
+      // 6. Update People list from all merged debts
+      final peopleSet = <String>{...tracker.people};
+      for (final d in mergedDebts) {
+        if (d.personName.trim().isNotEmpty) {
+          peopleSet.add(d.personName.trim());
+        }
+      }
+      tracker.people.assignAll(peopleSet.toList());
+      await _storageService.savePeople(tracker.people);
+
+      state.value = SyncState.synced;
+
+      // 7. Push any remaining offline creations to the server
+      await syncPendingItems();
+      return true;
+    } catch (e) {
+      lastError.value = e.toString();
+      state.value = SyncState.error;
+      return false;
+    } finally {
+      checkPendingStatus();
+    }
+  }
+
   /// Triggers background upload for all unsynced items with full error handling
   Future<void> syncPendingItems({bool showFeedback = false}) async {
-    if (!AuthController.to.isAuthenticated.value) {
+    if (!Get.isRegistered<AuthController>() ||
+        !AuthController.to.isAuthenticated.value) {
       state.value = SyncState.idle;
       return;
     }

@@ -142,7 +142,8 @@ class DebtModel {
       title: json['title'] as String,
       amount: (json['amount'] as num).toDouble(),
       date: DateTime.parse(json['date'] as String),
-      direction: (json['direction'] as String) == 'theyOweMe'
+      direction: (json['direction'] == 'theyOweMe' ||
+              json['direction'] == 'LENT')
           ? DebtDirection.theyOweMe
           : DebtDirection.iOweThem,
       repayments: (json['repayments'] as List<dynamic>?)

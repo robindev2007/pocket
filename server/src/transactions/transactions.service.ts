@@ -75,6 +75,24 @@ export class TransactionsService {
   }
 
   /**
+   * Retrieves all non-deleted transactions for cloud sync hydration
+   */
+  async findAllForSync(userId: string, since?: Date): Promise<TransactionResponse[]> {
+    const where: Prisma.TransactionWhereInput = {
+      userId,
+      isDeleted: false,
+      ...(since ? { updatedAt: { gte: since } } : {}),
+    };
+
+    const records = await prisma.transaction.findMany({
+      where,
+      orderBy: [{ date: 'desc' }, { createdAt: 'desc' }],
+    });
+
+    return records.map((r) => this.mapToResponse(r));
+  }
+
+  /**
    * Retrieves filtered, paginated transactions for the authenticated user
    */
   async findAll(

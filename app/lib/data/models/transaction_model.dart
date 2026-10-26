@@ -69,7 +69,7 @@ class TransactionModel {
       id: json['id'] as String,
       title: json['title'] as String,
       amount: (json['amount'] as num).toDouble(),
-      type: (json['type'] as String) == 'income'
+      type: (json['type']?.toString().toUpperCase() == 'INCOME')
           ? TransactionType.income
           : TransactionType.expense,
       date: DateTime.parse(json['date'] as String),

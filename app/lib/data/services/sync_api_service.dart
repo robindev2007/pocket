@@ -17,6 +17,29 @@ class SyncApiService {
         'Authorization': 'Bearer $token',
       };
 
+  /// Pulls the latest cloud transactions, debts, and server time for hydration
+  Future<Map<String, dynamic>?> pullRemoteData(
+    String token, {
+    DateTime? since,
+  }) async {
+    try {
+      final queryParams = since != null ? '?since=${since.toIso8601String()}' : '';
+      final uri = Uri.parse('${ApiConstants.baseUrl}/sync/pull$queryParams');
+      final response = await _client
+          .get(uri, headers: _headers(token))
+          .timeout(const Duration(seconds: 12));
+
+      if (response.statusCode >= 200 && response.statusCode < 300) {
+        final Map<String, dynamic> body =
+            jsonDecode(response.body) as Map<String, dynamic>;
+        return body['data'] as Map<String, dynamic>?;
+      }
+      return null;
+    } catch (_) {
+      return null;
+    }
+  }
+
   /// Uploads a single transaction to the cloud server
   Future<bool> uploadTransaction(TransactionModel tx, String token) async {
     try {
