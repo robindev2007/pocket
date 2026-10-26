@@ -12,19 +12,25 @@ class AddDebtDialog extends StatefulWidget {
   const AddDebtDialog({
     super.key,
     this.initialDirection = DebtDirection.theyOweMe,
+    this.initialPerson,
   });
 
   final DebtDirection initialDirection;
+  final String? initialPerson;
 
   static Future<void> show(
     BuildContext context, {
     DebtDirection initialDirection = DebtDirection.theyOweMe,
+    String? initialPerson,
   }) {
     return showModalBottomSheet(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (context) => AddDebtDialog(initialDirection: initialDirection),
+      builder: (context) => AddDebtDialog(
+        initialDirection: initialDirection,
+        initialPerson: initialPerson,
+      ),
     );
   }
 
@@ -78,7 +84,7 @@ class _AddDebtDialogState extends State<AddDebtDialog> {
     _selectedDirection = widget.initialDirection;
     _selectedDate = DateTime.now();
 
-    _personController = TextEditingController();
+    _personController = TextEditingController(text: widget.initialPerson ?? '');
     _titleController = TextEditingController();
     _amountController = TextEditingController();
     _noteController = TextEditingController();

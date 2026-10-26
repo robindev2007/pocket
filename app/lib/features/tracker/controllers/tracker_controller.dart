@@ -1,6 +1,7 @@
 import 'package:flutter/widgets.dart';
 import 'package:get/get.dart';
 import '../../../data/models/debt_model.dart';
+import '../../../data/models/person_debt_model.dart';
 import '../../../data/models/transaction_model.dart';
 import '../../../data/models/user_profile_model.dart';
 import '../../../data/services/storage_service.dart';
@@ -237,13 +238,160 @@ class TrackerController extends GetxController {
     }
   }
 
-  // --- People Actions ---
+  // --- People Actions & Ledger Aggregations ---
+
+  List<PersonDebtSummary> get peopleSummaries {
+    final distinctNames = <String>{};
+    for (final p in people) {
+      if (p.trim().isNotEmpty) distinctNames.add(p.trim());
+    }
+    for (final d in debts) {
+      if (d.personName.trim().isNotEmpty) distinctNames.add(d.personName.trim());
+    }
+
+    final list = distinctNames.map((name) => getPersonSummary(name)).toList();
+
+    // Sort: Active non-zero balances first (highest absolute net balance), then alphabetically
+    list.sort((a, b) {
+      final aActive = !a.isSettled;
+      final bActive = !b.isSettled;
+      if (aActive && !bActive) return -1;
+      if (!aActive && bActive) return 1;
+      if (a.netBalance.abs() != b.netBalance.abs()) {
+        return b.netBalance.abs().compareTo(a.netBalance.abs());
+      }
+      return a.name.toLowerCase().compareTo(b.name.toLowerCase());
+    });
+
+    return list;
+  }
+
+  PersonDebtSummary getPersonSummary(String personName) {
+    final trimmed = personName.trim().toLowerCase();
+    final personDebts =
+        debts.where((d) => d.personName.trim().toLowerCase() == trimmed).toList();
+
+    double theyOweMe = 0.0;
+    double iOweThem = 0.0;
+    int activeDebts = 0;
+    int settledDebts = 0;
+    DateTime? lastActivity;
+
+    for (final d in personDebts) {
+      if (lastActivity == null || d.date.isAfter(lastActivity)) {
+        lastActivity = d.date;
+      }
+      for (final r in d.repayments) {
+        if (lastActivity == null || r.date.isAfter(lastActivity)) {
+          lastActivity = r.date;
+        }
+      }
+
+      if (d.isSettled) {
+        settledDebts++;
+      } else {
+        activeDebts++;
+      }
+
+      if (d.isTheyOweMe) {
+        theyOweMe += d.remainingAmount;
+      } else {
+        iOweThem += d.remainingAmount;
+      }
+    }
+
+    final originalName = people.firstWhereOrNull((p) => p.trim().toLowerCase() == trimmed) ??
+        (personDebts.isNotEmpty ? personDebts.first.personName : personName.trim());
+
+    return PersonDebtSummary(
+      name: originalName,
+      theyOweMe: theyOweMe,
+      iOweThem: iOweThem,
+      netBalance: theyOweMe - iOweThem,
+      activeDebtsCount: activeDebts,
+      settledDebtsCount: settledDebts,
+      totalDebtsCount: personDebts.length,
+      lastActivityDate: lastActivity,
+    );
+  }
+
+  List<PersonLedgerItem> getPersonLedger(String personName) {
+    final trimmed = personName.trim().toLowerCase();
+    final personDebts =
+        debts.where((d) => d.personName.trim().toLowerCase() == trimmed).toList();
+
+    final items = <PersonLedgerItem>[];
+
+    for (final d in personDebts) {
+      items.add(
+        PersonLedgerItem(
+          id: d.id,
+          debtId: d.id,
+          type: d.isTheyOweMe ? PersonLedgerType.loanGiven : PersonLedgerType.loanTaken,
+          title: d.title,
+          amount: d.amount,
+          date: d.date,
+          note: d.note,
+          affectsCashBalance: true,
+          isSettled: d.isSettled,
+          debt: d,
+        ),
+      );
+
+      for (final r in d.repayments) {
+        items.add(
+          PersonLedgerItem(
+            id: r.id,
+            debtId: d.id,
+            type: d.isTheyOweMe
+                ? PersonLedgerType.repaymentCollected
+                : PersonLedgerType.repaymentPaid,
+            title: 'Repayment for "${d.title}"',
+            amount: r.amount,
+            date: r.date,
+            note: r.note,
+            affectsCashBalance: r.affectsCashBalance,
+            debt: d,
+            repayment: r,
+          ),
+        );
+      }
+    }
+
+    items.sort((a, b) => b.date.compareTo(a.date));
+    return items;
+  }
 
   Future<void> addPerson(String name) async {
     final trimmed = name.trim();
     if (trimmed.isNotEmpty && !people.contains(trimmed)) {
       people.add(trimmed);
       await _storageService.savePeople(people);
+    }
+  }
+
+  Future<void> deletePerson(String name) async {
+    final trimmed = name.trim().toLowerCase();
+    people.removeWhere((p) => p.trim().toLowerCase() == trimmed);
+    await _storageService.savePeople(people);
+  }
+
+  Future<void> settleAllDebtsForPerson(String personName) async {
+    final trimmed = personName.trim().toLowerCase();
+    final activeDebts = debts
+        .where((d) => d.personName.trim().toLowerCase() == trimmed && !d.isSettled)
+        .toList();
+
+    for (final debt in activeDebts) {
+      if (debt.remainingAmount > 0.001) {
+        await recordRepayment(
+          debtId: debt.id,
+          amount: debt.remainingAmount,
+          date: DateTime.now(),
+          note: 'Full settlement',
+          affectsCashBalance: true,
+        );
+      }
     }
   }
 
