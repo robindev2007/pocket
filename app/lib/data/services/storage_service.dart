@@ -9,6 +9,7 @@ class StorageService {
   static const String _keyDebts = 'mm_debts';
   static const String _keyPeople = 'mm_people';
   static const String _keyUserProfile = 'mm_user_profile';
+  static const String _keyAuthToken = 'mm_auth_jwt_token';
 
   SharedPreferences? _prefs;
 
@@ -92,6 +93,27 @@ class StorageService {
     await init();
     final jsonStr = jsonEncode(profile.toJson());
     await _prefs?.setString(_keyUserProfile, jsonStr);
+  }
+
+  // --- Authentication ---
+  Future<void> saveAuthToken(String token) async {
+    await init();
+    await _prefs?.setString(_keyAuthToken, token);
+  }
+
+  Future<String?> loadAuthToken() async {
+    await init();
+    return _prefs?.getString(_keyAuthToken);
+  }
+
+  Future<void> clearAuthToken() async {
+    await init();
+    await _prefs?.remove(_keyAuthToken);
+  }
+
+  Future<bool> hasAuthToken() async {
+    final token = await loadAuthToken();
+    return token != null && token.isNotEmpty;
   }
 
   // --- Backup & Restore (JSON) ---

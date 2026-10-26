@@ -6,6 +6,7 @@ import '../../../../core/constants/app_sizes.dart';
 import '../../../../core/theme/theme.dart';
 import '../../../../core/utils/currency_formatter.dart';
 import '../../../../core/widgets/widgets.dart';
+import '../../../auth/presentation/widgets/google_auth_card.dart';
 import '../../controllers/tracker_controller.dart';
 import '../dialogs/backup_restore_dialog.dart';
 import '../dialogs/edit_profile_dialog.dart';
@@ -114,7 +115,20 @@ class ProfileTab extends StatelessWidget {
               ),
               AppSizes.gapH24,
 
-              // 2. QUICK ACTIVITY STATS
+              // 2. ACCOUNT & CLOUD SYNC
+              Text(
+                'Account & Cloud Sync',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w700,
+                  color: colorScheme.onSurface,
+                ),
+              ),
+              AppSizes.gapH12,
+              const GoogleAuthCard(),
+              AppSizes.gapH24,
+
+              // 3. QUICK ACTIVITY STATS
               Text(
                 'Activity Overview',
                 style: TextStyle(

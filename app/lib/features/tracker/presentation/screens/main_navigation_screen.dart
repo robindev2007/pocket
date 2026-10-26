@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
 import '../../../../core/theme/theme.dart';
+import '../../../auth/controllers/auth_controller.dart';
 import '../../controllers/tracker_controller.dart';
 import '../dialogs/welcome_name_dialog.dart';
 import 'dashboard_tab.dart';
@@ -22,6 +23,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
   @override
   void initState() {
     super.initState();
+    Get.put(AuthController());
     Get.put(TrackerController());
     _checkFirstLaunchOnboarding();
   }

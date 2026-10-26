@@ -76,16 +76,20 @@ class TrackerController extends GetxController {
 
   Future<void> updateProfile({
     required String name,
+    String? id,
     String? email,
     String? avatar,
     String? bio,
+    String? currency,
     bool? hasCompletedOnboarding,
   }) async {
     final updated = userProfile.value.copyWith(
+      id: id ?? userProfile.value.id,
       name: name.trim(),
       email: email?.trim(),
       avatar: avatar ?? userProfile.value.avatar,
       bio: bio?.trim(),
+      currency: currency ?? userProfile.value.currency,
       hasCompletedOnboarding:
           hasCompletedOnboarding ?? userProfile.value.hasCompletedOnboarding,
     );
