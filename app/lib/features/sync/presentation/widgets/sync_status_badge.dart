@@ -42,8 +42,8 @@ class _SyncStatusBadgeState extends State<SyncStatusBadge> {
     if (state == SyncState.synced) {
       _fadeTimer?.cancel();
       setState(() => _showSyncedConfirmation = true);
-      // Show tick mark and "OK", then fade/animate out after 2.5 seconds
-      _fadeTimer = Timer(const Duration(milliseconds: 2500), () {
+      // Show tick mark for 2 seconds, then fade/animate out
+      _fadeTimer = Timer(const Duration(seconds: 2), () {
         if (mounted) {
           setState(() => _showSyncedConfirmation = false);
         }
@@ -107,31 +107,20 @@ class _SyncStatusBadgeState extends State<SyncStatusBadge> {
           ),
         );
       } else if (_showSyncedConfirmation) {
-        // 2. Synced state: Tick mark and green "OK"
+        // 2. Synced state: Tick mark only (no text), visible for 2 seconds
         const greenLight = Color(0xFF16A34A);
         const greenDark = Color(0xFF4ADE80);
         final greenColor = isDark ? greenDark : greenLight;
 
-        content = Row(
-          key: const ValueKey('synced_ok'),
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(
-              Icons.check_rounded,
-              size: 15,
-              color: greenColor,
-            ),
-            const SizedBox(width: 4),
-            Text(
-              'OK',
-              style: TextStyle(
-                fontSize: 11.5,
-                fontWeight: FontWeight.w700,
-                color: greenColor,
-                letterSpacing: 0.2,
-              ),
-            ),
-          ],
+        content = SizedBox(
+          key: const ValueKey('synced_tick'),
+          width: 14,
+          height: 14,
+          child: Icon(
+            Icons.check_rounded,
+            size: 15,
+            color: greenColor,
+          ),
         );
       } else if (isError) {
         // 3. Error state: Retry prompt
@@ -192,13 +181,18 @@ class _SyncStatusBadgeState extends State<SyncStatusBadge> {
         content = const SizedBox.shrink(key: ValueKey('empty'));
       }
 
+      final isIconOnly = isSyncing || _showSyncedConfirmation;
+
       final badgeCard = Material(
         color: Colors.transparent,
         child: InkWell(
           onTap: onTap,
           borderRadius: BorderRadius.circular(20),
           child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+            padding: EdgeInsets.symmetric(
+              horizontal: isIconOnly ? 8 : 10,
+              vertical: isIconOnly ? 8 : 6,
+            ),
             decoration: BoxDecoration(
               color: cardBg,
               borderRadius: BorderRadius.circular(20),

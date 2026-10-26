@@ -195,7 +195,7 @@ void main() {
       expect(find.text('syncing'), findsNothing);
     });
 
-    testWidgets('shows green tick mark and OK when synced, then animates out after timer',
+    testWidgets('shows green tick mark only (no text OK) when synced, then animates out after 2 sec',
         (WidgetTester tester) async {
       SharedPreferences.setMockInitialValues({});
       final auth = Get.put(AuthController());
@@ -223,12 +223,12 @@ void main() {
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 250));
 
-      // Should show tick mark and green text "OK"
+      // Should show tick mark icon only, NO text "OK"
       expect(find.byIcon(Icons.check_rounded), findsOneWidget);
-      expect(find.text('OK'), findsOneWidget);
+      expect(find.text('OK'), findsNothing);
 
-      // Fast-forward past 2500ms fade timer and 300ms crossfade
-      await tester.pump(const Duration(milliseconds: 2600));
+      // Fast-forward past 2000ms timer and 300ms crossfade
+      await tester.pump(const Duration(milliseconds: 2100));
       await tester.pump(const Duration(milliseconds: 350));
 
       // AnimatedCrossFade should show second child (collapsed/faded out)
