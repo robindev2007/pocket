@@ -42,60 +42,60 @@ The mobile client is a **Local-First, Offline-Capable Flutter App** storing reco
 
 ---
 
-### Phase 3: Transactions Feature (`src/transactions/`)
+### Phase 3: Transactions Feature (`src/transactions/`) (Completed)
 
 Matches `TransactionModel` in mobile app (`../app/lib/data/models/transaction_model.dart`).
 
-- [ ] **Data Contracts & Types**:
-  - [ ] `transactions.types.ts`: Domain models, pagination query types, balance summary types.
-  - [ ] `transactions.dto.ts`: Zod validation schemas:
+- [x] **Data Contracts & Types**:
+  - [x] `transactions.types.ts`: Domain models, pagination query types, balance summary types.
+  - [x] `transactions.dto.ts`: Zod validation schemas:
     - `CreateTransactionSchema` (`title`, `amount`, `type: 'INCOME' | 'EXPENSE'`, `date`, `tag?`, `note?`).
     - `UpdateTransactionSchema` (partial updates).
     - `TransactionQuerySchema` (`page`, `limit`, `type`, `tag`, `startDate`, `endDate`, `search`).
-- [ ] **Business Logic (`transactions.service.ts`)**:
-  - [ ] `create(userId, dto)`: Atomic creation, increments user's monotonic `syncVersion`.
-  - [ ] `findAll(userId, query)`: Filtered, paginated transaction list with metadata.
-  - [ ] `findById(userId, id)`: Single transaction lookup with ownership check.
-  - [ ] `update(userId, id, dto)`: Updates transaction fields and bumps `version`.
-  - [ ] `softDelete(userId, id)`: Sets `isDeleted = true` (tombstone) so mobile sync can purge locally.
-  - [ ] `getBalanceSummary(userId)`: Calculates total income, total expense, and net cash balance.
-- [ ] **HTTP Layer**:
-  - [ ] `transactions.controller.ts`: Delegates to service, returns `ApiResponse`.
-  - [ ] `transactions.route.ts`: Protected by `authMiddleware`.
+- [x] **Business Logic (`transactions.service.ts`)**:
+  - [x] `create(userId, dto)`: Atomic creation, increments user's monotonic `syncVersion`.
+  - [x] `findAll(userId, query)`: Filtered, paginated transaction list with metadata.
+  - [x] `findById(userId, id)`: Single transaction lookup with ownership check.
+  - [x] `update(userId, id, dto)`: Updates transaction fields and bumps `version`.
+  - [x] `softDelete(userId, id)`: Sets `isDeleted = true` (tombstone) so mobile sync can purge locally.
+  - [x] `getBalanceSummary(userId)`: Calculates total income, total expense, and net cash balance.
+- [x] **HTTP Layer**:
+  - [x] `transactions.controller.ts`: Delegates to service, returns `ApiResponse`.
+  - [x] `transactions.route.ts`: Protected by `authMiddleware`.
     - `POST /transactions` &rarr; Create transaction.
     - `GET /transactions` &rarr; Paginated & filtered list.
     - `GET /transactions/summary` &rarr; Income, expense, and cash-in-hand balance.
     - `GET /transactions/:id` &rarr; Get single transaction.
     - `PATCH /transactions/:id` &rarr; Update transaction.
     - `DELETE /transactions/:id` &rarr; Soft-delete transaction.
-- [ ] **Testing**:
-  - [ ] `transactions.test.ts`: 100% unit and integration test coverage.
+- [x] **Testing**:
+  - [x] `transactions.test.ts`: 100% unit and integration test coverage.
 
 ---
 
-### Phase 4: Debts & Repayments Feature (`src/debts/`)
+### Phase 4: Debts & Repayments Feature (`src/debts/`) (Completed)
 
 Matches `DebtModel` & `DebtRepaymentModel` in mobile app (`../app/lib/data/models/debt_model.dart`).
 
-- [ ] **Data Contracts & Types**:
-  - [ ] `debts.types.ts`: Debt, Repayment, Direction (`LENT` / `BORROWED`), and Debt Summary interfaces.
-  - [ ] `debts.dto.ts`: Zod schemas:
+- [x] **Data Contracts & Types**:
+  - [x] `debts.types.ts`: Debt, Repayment, Direction (`LENT` / `BORROWED`), and Debt Summary interfaces.
+  - [x] `debts.dto.ts`: Zod schemas:
     - `CreateDebtSchema` (`personName`, `title`, `amount`, `date`, `direction: 'LENT' | 'BORROWED'`, `note?`).
     - `AddRepaymentSchema` (`amount`, `date`, `note?`, `affectsCashBalance?`).
     - `DebtQuerySchema` (`direction`, `isSettled`, `personName`, `search`).
-- [ ] **Business Logic (`debts.service.ts`)**:
-  - [ ] `createDebt(userId, dto)`: Creates debt record.
-  - [ ] `getDebts(userId, query)`: Fetches debts including nested repayments, calculates `totalRepaid`, `remainingAmount`, and `isSettled`.
-  - [ ] `getDebtById(userId, id)`: Fetches single debt with all repayments.
-  - [ ] `addRepayment(userId, debtId, dto)`:
+- [x] **Business Logic (`debts.service.ts`)**:
+  - [x] `createDebt(userId, dto)`: Creates debt record.
+  - [x] `getDebts(userId, query)`: Fetches debts including nested repayments, calculates `totalRepaid`, `remainingAmount`, and `isSettled`.
+  - [x] `getDebtById(userId, id)`: Fetches single debt with all repayments.
+  - [x] `addRepayment(userId, debtId, dto)`:
     - Appends repayment in transaction.
     - Automatically marks `isSettled = true` if `remainingAmount <= 0`.
     - Optional: If `affectsCashBalance: true`, automatically creates a balancing `Transaction` entry.
-  - [ ] `deleteRepayment(userId, debtId, repaymentId)`: Soft-deletes repayment and recalculates settlement.
-  - [ ] `softDeleteDebt(userId, id)`: Soft-deletes debt and all associated repayments.
-  - [ ] `getDebtSummary(userId)`: Calculates "They Owe Me" (receivables) vs "I Owe Them" (payables) and net adjusted balance.
-- [ ] **HTTP Layer**:
-  - [ ] `debts.controller.ts` & `debts.route.ts`:
+  - [x] `deleteRepayment(userId, debtId, repaymentId)`: Soft-deletes repayment and recalculates settlement.
+  - [x] `softDeleteDebt(userId, id)`: Soft-deletes debt and all associated repayments.
+  - [x] `getDebtSummary(userId)`: Calculates "They Owe Me" (receivables) vs "I Owe Them" (payables) and net adjusted balance.
+- [x] **HTTP Layer**:
+  - [x] `debts.controller.ts` & `debts.route.ts`:
     - `POST /debts` &rarr; Create debt.
     - `GET /debts` &rarr; List debts with filters (`direction`, `isSettled`).
     - `GET /debts/summary` &rarr; Receivables vs payables summary.
@@ -104,8 +104,8 @@ Matches `DebtModel` & `DebtRepaymentModel` in mobile app (`../app/lib/data/model
     - `DELETE /debts/:id` &rarr; Soft-delete debt.
     - `POST /debts/:id/repayments` &rarr; Record partial or full repayment.
     - `DELETE /debts/:id/repayments/:repaymentId` &rarr; Remove repayment.
-- [ ] **Testing**:
-  - [ ] `debts.test.ts`: Settlement calculations and repayment transactions tests.
+- [x] **Testing**:
+  - [x] `debts.test.ts`: Settlement calculations and repayment transactions tests.
 
 ---
 

@@ -1,6 +1,8 @@
 import express, { type Application, type Request, type Response } from 'express';
 import { authRouter } from './auth/auth.route';
 import { usersRouter } from './users/users.route';
+import { transactionsRouter } from './transactions/transactions.route';
+import { debtsRouter } from './debts/debts.route';
 import { errorMiddleware, loggerMiddleware, notFoundMiddleware } from './common/middleware';
 
 // Safely serialize BigInt to string in JSON responses
@@ -36,6 +38,8 @@ export const createApp = (): Application => {
   // Feature Routes
   app.use('/auth', authRouter);
   app.use('/users', usersRouter);
+  app.use('/transactions', transactionsRouter);
+  app.use('/debts', debtsRouter);
 
   // 404 Not Found Middleware (catches unhandled routes)
   app.use(notFoundMiddleware);
