@@ -1,13 +1,72 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import '../../../../core/theme/theme.dart';
 import '../../../auth/controllers/auth_controller.dart';
 import '../../controllers/sync_controller.dart';
 
-class SyncStatusBadge extends StatelessWidget {
+class SyncStatusBadge extends StatefulWidget {
   const SyncStatusBadge({super.key});
 
   @override
+  State<SyncStatusBadge> createState() => _SyncStatusBadgeState();
+}
+
+class _SyncStatusBadgeState extends State<SyncStatusBadge> {
+  Worker? _syncStateWorker;
+  bool _showSyncedConfirmation = false;
+  Timer? _fadeTimer;
+
+  @override
+  void initState() {
+    super.initState();
+    _setupWorker();
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _setupWorker();
+  }
+
+  void _setupWorker() {
+    if (_syncStateWorker != null) return;
+    if (Get.isRegistered<SyncController>()) {
+      _syncStateWorker =
+          ever<SyncState>(SyncController.to.state, _handleStateChange);
+    }
+  }
+
+  void _handleStateChange(SyncState state) {
+    if (!mounted) return;
+    if (state == SyncState.synced) {
+      _fadeTimer?.cancel();
+      setState(() => _showSyncedConfirmation = true);
+      // Show tick mark and "OK", then fade/animate out after 2.5 seconds
+      _fadeTimer = Timer(const Duration(milliseconds: 2500), () {
+        if (mounted) {
+          setState(() => _showSyncedConfirmation = false);
+        }
+      });
+    } else {
+      _fadeTimer?.cancel();
+      if (_showSyncedConfirmation) {
+        setState(() => _showSyncedConfirmation = false);
+      }
+    }
+  }
+
+  @override
+  void dispose() {
+    _fadeTimer?.cancel();
+    _syncStateWorker?.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
+    _setupWorker();
+
     if (!Get.isRegistered<AuthController>() ||
         !Get.isRegistered<SyncController>()) {
       return const SizedBox.shrink();
@@ -16,9 +75,11 @@ class SyncStatusBadge extends StatelessWidget {
     final authController = AuthController.to;
     final syncController = SyncController.to;
     final isDark = context.isDarkMode;
+    final cardBg = context.customColors.cardBackground;
+    final cardBorder = context.customColors.cardBorder;
 
     return Obx(() {
-      // Only show when the user is signed in to an account
+      // Only display sync badge when authenticated
       if (!authController.isAuthenticated.value) {
         return const SizedBox.shrink();
       }
@@ -28,196 +89,158 @@ class SyncStatusBadge extends StatelessWidget {
       final hasPending = syncController.hasPending;
       final pendingCount = syncController.pendingCount.value;
 
-      // 1. Currently Syncing state (Blue/Primary subtle indicator)
+      final bool isVisible =
+          isSyncing || isError || hasPending || _showSyncedConfirmation;
+
+      Widget content;
+      VoidCallback? onTap;
+
       if (isSyncing) {
-        return Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 4),
-          child: Material(
-            color: Colors.transparent,
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-              decoration: BoxDecoration(
-                color: isDark
-                    ? Colors.blue.withValues(alpha: 0.15)
-                    : const Color(0xFFEFF6FF),
-                borderRadius: BorderRadius.circular(20),
-                border: Border.all(
-                  color: isDark
-                      ? Colors.blue.withValues(alpha: 0.3)
-                      : const Color(0xFFBFDBFE),
-                  width: 0.8,
-                ),
-              ),
-              child: const Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  SizedBox(
-                    width: 11,
-                    height: 11,
-                    child: CircularProgressIndicator(
-                      strokeWidth: 1.8,
-                      valueColor: AlwaysStoppedAnimation<Color>(Colors.blue),
-                    ),
-                  ),
-                  SizedBox(width: 6),
-                  Text(
-                    'Syncing...',
-                    style: TextStyle(
-                      fontSize: 11.5,
-                      fontWeight: FontWeight.w600,
-                      color: Colors.blue,
-                    ),
-                  ),
-                ],
-              ),
-            ),
+        // 1. Syncing state: Circular progress indicator only, NO text
+        content = const SizedBox(
+          key: ValueKey('syncing'),
+          width: 14,
+          height: 14,
+          child: CircularProgressIndicator(
+            strokeWidth: 2.0,
+            valueColor: AlwaysStoppedAnimation<Color>(AppTheme.primaryBlue),
           ),
         );
-      }
+      } else if (_showSyncedConfirmation) {
+        // 2. Synced state: Tick mark and green "OK"
+        const greenLight = Color(0xFF16A34A);
+        const greenDark = Color(0xFF4ADE80);
+        final greenColor = isDark ? greenDark : greenLight;
 
-      // 2. Error / Failed State (Amber/Orange with Retry prompt)
-      if (isError) {
-        return Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 4),
-          child: InkWell(
-            onTap: () => syncController.syncPendingItems(showFeedback: true),
-            borderRadius: BorderRadius.circular(20),
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-              decoration: BoxDecoration(
-                color: isDark
-                    ? const Color(0xFFEA580C).withValues(alpha: 0.15)
-                    : const Color(0xFFFFF7ED), // Orange-50
-                borderRadius: BorderRadius.circular(20),
-                border: Border.all(
-                  color: isDark
-                      ? const Color(0xFFEA580C).withValues(alpha: 0.35)
-                      : const Color(0xFFFDBA74), // Orange-300
-                  width: 0.8,
-                ),
-              ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(
-                    Icons.refresh_rounded,
-                    size: 13,
-                    color: isDark
-                        ? const Color(0xFFFB923C)
-                        : const Color(0xFFC2410C),
-                  ),
-                  const SizedBox(width: 5),
-                  Text(
-                    pendingCount == 1
-                        ? '1 unsynced • Retry'
-                        : '$pendingCount unsynced • Retry',
-                    style: TextStyle(
-                      fontSize: 11.5,
-                      fontWeight: FontWeight.w600,
-                      color: isDark
-                          ? const Color(0xFFFB923C)
-                          : const Color(0xFFC2410C),
-                    ),
-                  ),
-                ],
+        content = Row(
+          key: const ValueKey('synced_ok'),
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              Icons.check_rounded,
+              size: 15,
+              color: greenColor,
+            ),
+            const SizedBox(width: 4),
+            Text(
+              'OK',
+              style: TextStyle(
+                fontSize: 11.5,
+                fontWeight: FontWeight.w700,
+                color: greenColor,
+                letterSpacing: 0.2,
               ),
             ),
-          ),
+          ],
         );
-      }
+      } else if (isError) {
+        // 3. Error state: Retry prompt
+        final orangeColor =
+            isDark ? const Color(0xFFFB923C) : const Color(0xFFEA580C);
 
-      // 3. Unsynced / Pending State (Clean Yellow/Amber indicator)
-      if (hasPending) {
-        const yellowColor = Color(0xFFEAB308); // Tailwind Amber-500
-        return Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 4),
-          child: InkWell(
-            onTap: () => syncController.syncPendingItems(showFeedback: true),
-            borderRadius: BorderRadius.circular(20),
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-              decoration: BoxDecoration(
-                color: isDark
-                    ? yellowColor.withValues(alpha: 0.15)
-                    : const Color(0xFFFEF9C3), // Tailwind Yellow-100
-                borderRadius: BorderRadius.circular(20),
-                border: Border.all(
-                  color: isDark
-                      ? yellowColor.withValues(alpha: 0.3)
-                      : const Color(0xFFFDE047),
-                  width: 0.8,
-                ),
-              ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Container(
-                    width: 7,
-                    height: 7,
-                    decoration: const BoxDecoration(
-                      color: yellowColor,
-                      shape: BoxShape.circle,
-                    ),
-                  ),
-                  const SizedBox(width: 6),
-                  Text(
-                    pendingCount == 1 ? '1 unsynced' : '$pendingCount unsynced',
-                    style: TextStyle(
-                      fontSize: 11.5,
-                      fontWeight: FontWeight.w600,
-                      color: isDark
-                          ? const Color(0xFFFACC15)
-                          : const Color(0xFF854D0E),
-                    ),
-                  ),
-                ],
+        content = Row(
+          key: const ValueKey('error'),
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              Icons.refresh_rounded,
+              size: 13,
+              color: orangeColor,
+            ),
+            const SizedBox(width: 4),
+            Text(
+              pendingCount == 1 ? '1 • Retry' : '$pendingCount • Retry',
+              style: TextStyle(
+                fontSize: 11.5,
+                fontWeight: FontWeight.w600,
+                color: orangeColor,
               ),
             ),
-          ),
+          ],
         );
+        onTap = () => syncController.syncPendingItems(showFeedback: true);
+      } else if (hasPending) {
+        // 4. Pending items: Yellow dot + count
+        const yellowColor = Color(0xFFEAB308);
+
+        content = Row(
+          key: const ValueKey('pending'),
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 7,
+              height: 7,
+              decoration: const BoxDecoration(
+                color: yellowColor,
+                shape: BoxShape.circle,
+              ),
+            ),
+            const SizedBox(width: 5),
+            Text(
+              '$pendingCount unsynced',
+              style: TextStyle(
+                fontSize: 11.5,
+                fontWeight: FontWeight.w600,
+                color:
+                    isDark ? const Color(0xFFFACC15) : const Color(0xFF854D0E),
+              ),
+            ),
+          ],
+        );
+        onTap = () => syncController.syncPendingItems(showFeedback: true);
+      } else {
+        content = const SizedBox.shrink(key: ValueKey('empty'));
       }
 
-      // 4. Fully Synced state (Clean minimal green indicator)
-      return Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 4),
+      final badgeCard = Material(
+        color: Colors.transparent,
         child: InkWell(
-          onTap: () {
-            Get.snackbar(
-              'Up to date',
-              'All data is safely synchronized with the cloud.',
-              snackPosition: SnackPosition.BOTTOM,
-              backgroundColor: Colors.green.withValues(alpha: 0.9),
-              colorText: Colors.white,
-              duration: const Duration(seconds: 2),
-              margin: const EdgeInsets.all(16),
-            );
-          },
+          onTap: onTap,
           borderRadius: BorderRadius.circular(20),
           child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
             decoration: BoxDecoration(
-              color: isDark
-                  ? Colors.green.withValues(alpha: 0.12)
-                  : const Color(0xFFF0FDF4),
+              color: cardBg,
               borderRadius: BorderRadius.circular(20),
-            ),
-            child: const Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(Icons.check, size: 12, color: Colors.green),
-                SizedBox(width: 4),
-                Text(
-                  'Synced',
-                  style: TextStyle(
-                    fontSize: 11,
-                    fontWeight: FontWeight.w600,
-                    color: Colors.green,
-                  ),
+              border: Border.all(
+                color: cardBorder,
+                width: 1.0,
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: isDark
+                      ? Colors.black.withValues(alpha: 0.25)
+                      : Colors.black.withValues(alpha: 0.04),
+                  blurRadius: 4,
+                  offset: const Offset(0, 1),
                 ),
               ],
             ),
+            child: AnimatedSize(
+              duration: const Duration(milliseconds: 250),
+              curve: Curves.easeInOut,
+              child: AnimatedSwitcher(
+                duration: const Duration(milliseconds: 200),
+                child: content,
+              ),
+            ),
           ),
         ),
+      );
+
+      return AnimatedCrossFade(
+        firstChild: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 4),
+          child: badgeCard,
+        ),
+        secondChild: const SizedBox.shrink(),
+        crossFadeState: isVisible
+            ? CrossFadeState.showFirst
+            : CrossFadeState.showSecond,
+        duration: const Duration(milliseconds: 300),
+        sizeCurve: Curves.easeInOut,
+        firstCurve: Curves.easeInOut,
+        secondCurve: Curves.easeInOut,
       );
     });
   }

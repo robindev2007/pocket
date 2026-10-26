@@ -1,9 +1,16 @@
+import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:get/get.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
+import 'package:manage_money/core/theme/theme.dart';
 import 'package:manage_money/data/models/debt_model.dart';
 import 'package:manage_money/data/models/transaction_model.dart';
 import 'package:manage_money/data/services/sync_api_service.dart';
+import 'package:manage_money/features/auth/controllers/auth_controller.dart';
+import 'package:manage_money/features/sync/controllers/sync_controller.dart';
+import 'package:manage_money/features/sync/presentation/widgets/sync_status_badge.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
   group('Sync Models Serialization', () {
@@ -145,6 +152,88 @@ void main() {
 
       final id = await service.uploadDebt(debt, 'invalid-token');
       expect(id, isNull);
+    });
+  });
+
+  group('SyncStatusBadge UI Tests', () {
+    setUp(() {
+      SharedPreferences.setMockInitialValues({});
+      Get.reset();
+      Get.testMode = true;
+    });
+
+    testWidgets('shows circular progress without text syncing when isSyncing is true',
+        (WidgetTester tester) async {
+      SharedPreferences.setMockInitialValues({});
+      final auth = Get.put(AuthController());
+      final sync = Get.put(SyncController());
+
+      await tester.pumpWidget(
+        GetMaterialApp(
+          theme: AppTheme.build(brightness: Brightness.light),
+          home: const Scaffold(
+            appBar: PreferredSize(
+              preferredSize: Size.fromHeight(56),
+              child: SyncStatusBadge(),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      auth.isAuthenticated.value = true;
+      await tester.pump();
+
+      sync.state.value = SyncState.syncing;
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 250));
+
+      // Circular progress should be visible
+      expect(find.byType(CircularProgressIndicator), findsOneWidget);
+      // No text "Syncing..." or "syncing" should exist
+      expect(find.text('Syncing...'), findsNothing);
+      expect(find.text('syncing'), findsNothing);
+    });
+
+    testWidgets('shows green tick mark and OK when synced, then animates out after timer',
+        (WidgetTester tester) async {
+      SharedPreferences.setMockInitialValues({});
+      final auth = Get.put(AuthController());
+      final sync = Get.put(SyncController());
+
+      await tester.pumpWidget(
+        GetMaterialApp(
+          theme: AppTheme.build(brightness: Brightness.light),
+          home: const Scaffold(
+            appBar: PreferredSize(
+              preferredSize: Size.fromHeight(56),
+              child: SyncStatusBadge(),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      auth.isAuthenticated.value = true;
+      sync.state.value = SyncState.syncing;
+      await tester.pump();
+
+      // Transition to synced
+      sync.state.value = SyncState.synced;
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 250));
+
+      // Should show tick mark and green text "OK"
+      expect(find.byIcon(Icons.check_rounded), findsOneWidget);
+      expect(find.text('OK'), findsOneWidget);
+
+      // Fast-forward past 2500ms fade timer and 300ms crossfade
+      await tester.pump(const Duration(milliseconds: 2600));
+      await tester.pump(const Duration(milliseconds: 350));
+
+      // AnimatedCrossFade should show second child (collapsed/faded out)
+      final crossFade = tester.widget<AnimatedCrossFade>(find.byType(AnimatedCrossFade));
+      expect(crossFade.crossFadeState, CrossFadeState.showSecond);
     });
   });
 }
