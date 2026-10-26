@@ -1,13 +1,13 @@
 {
   "name": "server",
-  "main": "src/index.ts",
+  "main": "app.js",
   "module": "src/index.ts",
   "type": "module",
   "private": true,
   "scripts": {
     "start": "bun run src/index.ts",
     "dev": "bun --watch src/index.ts",
-    "build": "prisma generate && tsc --noEmit",
+    "build": "prisma generate && bun build src/index.ts --outfile app.js --target node --packages=external && bun build src/index.ts --outfile index.js --target node --packages=external",
     "postinstall": "prisma generate",
     "typecheck": "tsc --noEmit",
     "test": "NODE_OPTIONS=--experimental-vm-modules jest",
