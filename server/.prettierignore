@@ -1,0 +1,26 @@
+# Dependencies & packages
+node_modules/
+.pnp/
+.pnp.js
+
+# Build output
+dist/
+build/
+*.tsbuildinfo
+
+# Coverage & test output
+coverage/
+.nyc_output/
+
+# Lockfiles & cache
+bun.lock
+.cache/
+
+# Environment files
+.env
+.env.*
+!.env.example
+
+# Migrations & database artifacts (do not reformat auto-generated SQL)
+prisma/migration/
+

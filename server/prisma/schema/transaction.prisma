@@ -1,0 +1,27 @@
+enum TransactionType {
+  INCOME
+  EXPENSE
+  TRANSFER
+}
+
+model Transaction {
+  id        String          @id @default(uuid())
+  userId    String
+  title     String          @db.VarChar(150)
+  amount    Decimal         @db.Decimal(14, 2)
+  type      TransactionType
+  date      DateTime
+  tag       String?         @db.VarChar(50)
+  note      String?         @db.VarChar(500)
+  isDeleted Boolean         @default(false)
+  version   BigInt          @default(1)
+
+  user      User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime        @default(now())
+  updatedAt DateTime        @updatedAt
+
+  @@index([userId, isDeleted, date(sort: Desc)])
+  @@index([userId, updatedAt(sort: Asc)])
+}
+

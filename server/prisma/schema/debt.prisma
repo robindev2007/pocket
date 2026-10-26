@@ -1,0 +1,47 @@
+enum DebtDirection {
+  LENT
+  BORROWED
+}
+
+model Debt {
+  id         String        @id @default(uuid())
+  userId     String
+  personName String        @db.VarChar(120)
+  title      String        @db.VarChar(150)
+  amount     Decimal       @db.Decimal(14, 2)
+  date       DateTime
+  direction  DebtDirection
+  isSettled  Boolean       @default(false)
+  note       String?       @db.VarChar(500)
+  isDeleted  Boolean       @default(false)
+  version    BigInt        @default(1)
+
+  user       User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  repayments Repayment[]
+
+  createdAt  DateTime      @default(now())
+  updatedAt  DateTime      @updatedAt
+
+  @@index([userId, isDeleted, isSettled])
+  @@index([userId, updatedAt(sort: Asc)])
+}
+
+model Repayment {
+  id                 String   @id @default(uuid())
+  debtId             String
+  amount             Decimal  @db.Decimal(14, 2)
+  date               DateTime
+  note               String?  @db.VarChar(500)
+  affectsCashBalance Boolean  @default(true)
+  isDeleted          Boolean  @default(false)
+  version            BigInt   @default(1)
+
+  debt               Debt     @relation(fields: [debtId], references: [id], onDelete: Cascade)
+
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  @@index([debtId, isDeleted])
+  @@index([debtId, updatedAt(sort: Asc)])
+}
+

@@ -1,0 +1,18 @@
+model User {
+  id                     String        @id @default(uuid())
+  googleId               String?       @unique
+  email                  String?       @unique
+  name                   String
+  avatar                 String?
+  bio                    String?
+  currency               String        @default("USD")
+  hasCompletedOnboarding Boolean       @default(false)
+  syncVersion            BigInt        @default(1)
+  transactions           Transaction[]
+  debts                  Debt[]
+  createdAt              DateTime      @default(now())
+  updatedAt              DateTime      @updatedAt
+
+  @@index([email])
+}
+
