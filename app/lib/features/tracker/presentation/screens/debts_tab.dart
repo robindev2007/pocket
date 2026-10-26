@@ -123,8 +123,91 @@ class _DebtsTabState extends State<DebtsTab> {
                 subtitle: const Text('Record money given or borrowed'),
                 onTap: () {
                   Navigator.of(ctx).pop();
-                  AddDebtDialog.show(context);
+                  _showSelectPersonPicker(context);
                 },
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  void _showSelectPersonPicker(BuildContext context) {
+    final controller = TrackerController.to;
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) {
+        final customColors = context.customColors;
+        final colorScheme = context.colorScheme;
+
+        return Container(
+          padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
+          decoration: BoxDecoration(
+            color: customColors.cardBackground,
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Center(
+                child: Container(
+                  width: 36,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: customColors.bottomSheetHandle,
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+              ),
+              AppSizes.gapH16,
+              Text(
+                'Select Person',
+                style: TextStyle(
+                  fontSize: 17,
+                  fontWeight: FontWeight.w700,
+                  color: colorScheme.onSurface,
+                ),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                'Choose who you want to record a debt with:',
+                style: TextStyle(fontSize: 12, color: customColors.subtleText),
+              ),
+              const SizedBox(height: 12),
+              ConstrainedBox(
+                constraints: const BoxConstraints(maxHeight: 280),
+                child: ListView.separated(
+                  shrinkWrap: true,
+                  itemCount: controller.people.length,
+                  separatorBuilder: (_, _) => const Divider(height: 1),
+                  itemBuilder: (_, idx) {
+                    final p = controller.people[idx];
+                    return ListTile(
+                      contentPadding: EdgeInsets.zero,
+                      leading: CircleAvatar(
+                        radius: 16,
+                        backgroundColor: _getAvatarColor(p),
+                        child: Text(
+                          _getInitials(p),
+                          style: const TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w700,
+                            color: Colors.white,
+                          ),
+                        ),
+                      ),
+                      title: Text(p, style: const TextStyle(fontWeight: FontWeight.w600)),
+                      trailing: const Icon(Icons.arrow_forward_ios_rounded, size: 14),
+                      onTap: () {
+                        Navigator.of(ctx).pop();
+                        AddDebtDialog.show(context, personName: p);
+                      },
+                    );
+                  },
+                ),
               ),
             ],
           ),

@@ -11,25 +11,25 @@ import '../../controllers/tracker_controller.dart';
 class AddDebtDialog extends StatefulWidget {
   const AddDebtDialog({
     super.key,
+    required this.personName,
     this.initialDirection = DebtDirection.theyOweMe,
-    this.initialPerson,
   });
 
+  final String personName;
   final DebtDirection initialDirection;
-  final String? initialPerson;
 
   static Future<void> show(
     BuildContext context, {
+    required String personName,
     DebtDirection initialDirection = DebtDirection.theyOweMe,
-    String? initialPerson,
   }) {
     return showModalBottomSheet(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (context) => AddDebtDialog(
+        personName: personName,
         initialDirection: initialDirection,
-        initialPerson: initialPerson,
       ),
     );
   }
@@ -39,34 +39,24 @@ class AddDebtDialog extends StatefulWidget {
 }
 
 class _AddDebtDialogState extends State<AddDebtDialog> {
-  late final TextEditingController _personController;
   late final TextEditingController _titleController;
   late final TextEditingController _amountController;
   late final TextEditingController _noteController;
 
   late DebtDirection _selectedDirection;
   late DateTime _selectedDate;
-  String? _personError;
   String? _titleError;
   String? _amountError;
 
-  // Zod-like schema using Luthor
+  // Validation schema without person field
   static final _debtSchema = l.schema({
-    'person': l
-        .string()
-        .required(message: 'Please enter or select a person')
-        .min(1, message: 'Please enter or select a person')
-        .custom(
-          (value) => value.trim().isNotEmpty,
-          message: 'Please enter or select a person',
-        ),
     'title': l
         .string()
-        .required(message: 'Please enter a title')
-        .min(1, message: 'Please enter a title')
+        .required(message: 'Please enter a title or reason')
+        .min(1, message: 'Please enter a title or reason')
         .custom(
           (value) => value.trim().isNotEmpty,
-          message: 'Please enter a title',
+          message: 'Please enter a title or reason',
         ),
     'amount': l
         .string()
@@ -84,7 +74,6 @@ class _AddDebtDialogState extends State<AddDebtDialog> {
     _selectedDirection = widget.initialDirection;
     _selectedDate = DateTime.now();
 
-    _personController = TextEditingController(text: widget.initialPerson ?? '');
     _titleController = TextEditingController();
     _amountController = TextEditingController();
     _noteController = TextEditingController();
@@ -92,7 +81,6 @@ class _AddDebtDialogState extends State<AddDebtDialog> {
 
   @override
   void dispose() {
-    _personController.dispose();
     _titleController.dispose();
     _amountController.dispose();
     _noteController.dispose();
@@ -113,7 +101,6 @@ class _AddDebtDialogState extends State<AddDebtDialog> {
 
   void _submit() {
     final rawData = {
-      'person': _personController.text.trim(),
       'title': _titleController.text.trim(),
       'amount': _amountController.text.trim(),
     };
@@ -122,22 +109,19 @@ class _AddDebtDialogState extends State<AddDebtDialog> {
 
     if (!result.isValid) {
       setState(() {
-        _personError = result.getError('person');
         _titleError = result.getError('title');
         _amountError = result.getError('amount');
       });
       return;
     }
 
-    if (_personError != null || _titleError != null || _amountError != null) {
+    if (_titleError != null || _amountError != null) {
       setState(() {
-        _personError = null;
         _titleError = null;
         _amountError = null;
       });
     }
 
-    final person = _personController.text.trim();
     final title = _titleController.text.trim();
     final parsedAmount = double.parse(_amountController.text.trim());
 
@@ -146,7 +130,7 @@ class _AddDebtDialogState extends State<AddDebtDialog> {
         : null;
 
     TrackerController.to.addDebt(
-      personName: person,
+      personName: widget.personName,
       title: title,
       amount: parsedAmount,
       date: _selectedDate,
@@ -162,7 +146,6 @@ class _AddDebtDialogState extends State<AddDebtDialog> {
     final customColors = context.customColors;
     final colorScheme = context.colorScheme;
     final bottomInset = MediaQuery.of(context).viewInsets.bottom;
-    final controller = TrackerController.to;
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final softInputFill = customColors.inputFill;
 
@@ -190,13 +173,51 @@ class _AddDebtDialogState extends State<AddDebtDialog> {
             ),
             AppSizes.gapH16,
 
-            Text(
-              'Record Debt Entry',
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.w700,
-                color: colorScheme.onSurface,
-              ),
+            // Header with person name label
+            Row(
+              children: [
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        _selectedDirection == DebtDirection.theyOweMe
+                            ? 'Record Loan Given'
+                            : 'Record Money Borrowed',
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.w700,
+                          color: colorScheme.onSurface,
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Row(
+                        children: [
+                          Text(
+                            'With: ',
+                            style: TextStyle(
+                              fontSize: 12.5,
+                              color: customColors.subtleText,
+                            ),
+                          ),
+                          Text(
+                            widget.personName,
+                            style: TextStyle(
+                              fontSize: 12.5,
+                              fontWeight: FontWeight.w700,
+                              color: colorScheme.primary,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+                IconButton(
+                  icon: const Icon(Icons.close_rounded, size: 20),
+                  onPressed: () => Navigator.pop(context),
+                ),
+              ],
             ),
             AppSizes.gapH16,
 
@@ -242,44 +263,7 @@ class _AddDebtDialogState extends State<AddDebtDialog> {
             ),
             AppSizes.gapH16,
 
-            // Person Selector / Input
-            AppTextField(
-              controller: _personController,
-              label: 'Person Name',
-              hint: 'e.g. John, Sarah, Brother',
-              errorText: _personError,
-              onChanged: (_) {
-                if (_personError != null) {
-                  setState(() => _personError = null);
-                }
-              },
-              prefixIcon: const Icon(Icons.person_outline, size: 20),
-            ),
-
-            // Quick select existing people
-            if (controller.people.isNotEmpty) ...[
-              AppSizes.gapH8,
-              Wrap(
-                spacing: 6,
-                runSpacing: 6,
-                children: controller.people.map((p) {
-                  final isSelected = _personController.text == p;
-                  return AppFilterPill(
-                    label: p,
-                    isSelected: isSelected,
-                    onTap: () {
-                      setState(() {
-                        _personController.text = p;
-                        _personError = null;
-                      });
-                    },
-                  );
-                }).toList(),
-              ),
-            ],
-            AppSizes.gapH16,
-
-            // Debt Title
+            // Debt Title / Reason
             AppTextField(
               controller: _titleController,
               label: 'Title / Reason',
@@ -287,6 +271,7 @@ class _AddDebtDialogState extends State<AddDebtDialog> {
                   ? 'e.g. Lunch split, Lent cash'
                   : 'e.g. Borrowed for emergency, Rent share',
               errorText: _titleError,
+              autofocus: true,
               onChanged: (_) {
                 if (_titleError != null) {
                   setState(() => _titleError = null);
@@ -376,4 +361,3 @@ class _AddDebtDialogState extends State<AddDebtDialog> {
     );
   }
 }
-

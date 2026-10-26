@@ -666,8 +666,8 @@ class PersonLedgerScreen extends StatelessWidget {
               onPressed: () {
                 AddDebtDialog.show(
                   context,
+                  personName: personName,
                   initialDirection: DebtDirection.theyOweMe,
-                  initialPerson: personName,
                 );
               },
               icon: const Icon(Icons.arrow_outward_rounded, size: 16),
@@ -695,8 +695,8 @@ class PersonLedgerScreen extends StatelessWidget {
               onPressed: () {
                 AddDebtDialog.show(
                   context,
+                  personName: personName,
                   initialDirection: DebtDirection.iOweThem,
-                  initialPerson: personName,
                 );
               },
               icon: const Icon(Icons.arrow_downward_rounded, size: 16),
