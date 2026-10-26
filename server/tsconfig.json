@@ -7,7 +7,6 @@
     "moduleDetection": "force",
     "jsx": "react-jsx",
     "allowJs": true,
-    "types": ["jest"],
 
     // Bundler mode
     "moduleResolution": "bundler",
@@ -26,5 +25,6 @@
     "noUnusedLocals": false,
     "noUnusedParameters": false,
     "noPropertyAccessFromIndexSignature": false
-  }
+  },
+  "exclude": ["node_modules", "**/*.test.ts"]
 }
