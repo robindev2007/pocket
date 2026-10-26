@@ -96,29 +96,29 @@ class _SyncStatusBadgeState extends State<SyncStatusBadge> {
       VoidCallback? onTap;
 
       if (isSyncing) {
-        // 1. Syncing state: Circular progress indicator only, NO text
+        // 1. Syncing state: Circular progress indicator only, NO text, NO background
         content = const SizedBox(
           key: ValueKey('syncing'),
-          width: 14,
-          height: 14,
+          width: 16,
+          height: 16,
           child: CircularProgressIndicator(
             strokeWidth: 2.0,
             valueColor: AlwaysStoppedAnimation<Color>(AppTheme.primaryBlue),
           ),
         );
       } else if (_showSyncedConfirmation) {
-        // 2. Synced state: Tick mark only (no text), visible for 2 seconds
+        // 2. Synced state: Tick mark only, NO text, NO background, hides after 2 sec
         const greenLight = Color(0xFF16A34A);
         const greenDark = Color(0xFF4ADE80);
         final greenColor = isDark ? greenDark : greenLight;
 
         content = SizedBox(
           key: const ValueKey('synced_tick'),
-          width: 14,
-          height: 14,
+          width: 16,
+          height: 16,
           child: Icon(
             Icons.check_rounded,
-            size: 15,
+            size: 18,
             color: greenColor,
           ),
         );
@@ -190,26 +190,28 @@ class _SyncStatusBadgeState extends State<SyncStatusBadge> {
           borderRadius: BorderRadius.circular(20),
           child: Container(
             padding: EdgeInsets.symmetric(
-              horizontal: isIconOnly ? 8 : 10,
-              vertical: isIconOnly ? 8 : 6,
+              horizontal: isIconOnly ? 6 : 10,
+              vertical: isIconOnly ? 6 : 6,
             ),
-            decoration: BoxDecoration(
-              color: cardBg,
-              borderRadius: BorderRadius.circular(20),
-              border: Border.all(
-                color: cardBorder,
-                width: 1.0,
-              ),
-              boxShadow: [
-                BoxShadow(
-                  color: isDark
-                      ? Colors.black.withValues(alpha: 0.25)
-                      : Colors.black.withValues(alpha: 0.04),
-                  blurRadius: 4,
-                  offset: const Offset(0, 1),
-                ),
-              ],
-            ),
+            decoration: isIconOnly
+                ? null
+                : BoxDecoration(
+                    color: cardBg,
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(
+                      color: cardBorder,
+                      width: 1.0,
+                    ),
+                    boxShadow: [
+                      BoxShadow(
+                        color: isDark
+                            ? Colors.black.withValues(alpha: 0.25)
+                            : Colors.black.withValues(alpha: 0.04),
+                        blurRadius: 4,
+                        offset: const Offset(0, 1),
+                      ),
+                    ],
+                  ),
             child: AnimatedSize(
               duration: const Duration(milliseconds: 250),
               curve: Curves.easeInOut,
