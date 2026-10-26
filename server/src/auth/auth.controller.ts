@@ -2,6 +2,7 @@ import type { Request, Response } from 'express';
 import { GoogleSignInSchema } from './auth.dto';
 import { authService } from './auth.service';
 import { ApiResponse } from '../common/utils';
+import type { AuthenticatedRequest } from '../common/types/express';
 
 export class AuthController {
   async signInWithGoogle(req: Request, res: Response): Promise<Response> {
@@ -14,7 +15,8 @@ export class AuthController {
   }
 
   async getMe(req: Request, res: Response): Promise<Response> {
-    const user = await authService.getUserById(req.user!.id);
+    const authReq = req as AuthenticatedRequest;
+    const user = await authService.getUserById(authReq.user.id);
     return ApiResponse.success(res, user);
   }
 }

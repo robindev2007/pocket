@@ -1,8 +1,12 @@
-import 'express';
+import type { Request } from 'express';
 
 export interface AuthUser {
   id: string;
   email?: string | null;
+}
+
+export interface AuthenticatedRequest extends Request {
+  user: AuthUser;
 }
 
 declare global {
@@ -10,11 +14,5 @@ declare global {
     interface Request {
       user?: AuthUser;
     }
-  }
-}
-
-declare module 'express-serve-static-core' {
-  interface Request {
-    user?: AuthUser;
   }
 }

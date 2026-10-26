@@ -1,6 +1,7 @@
 import type { NextFunction, Request, Response } from 'express';
 import jwt from 'jsonwebtoken';
 import { AppError } from '../errors';
+import type { AuthenticatedRequest } from '../types/express';
 
 const getJwtSecret = (): string => {
   const secret = process.env.JWT_SECRET;
@@ -42,7 +43,7 @@ export const authMiddleware = (req: Request, _res: Response, next: NextFunction)
       throw AppError.unauthorized('Invalid token payload');
     }
 
-    req.user = {
+    (req as AuthenticatedRequest).user = {
       id: decoded.id,
       email: decoded.email,
     };

@@ -60,3 +60,5 @@ yarn-error.log*
 **/.widget_preview/
 **/ios/Flutter/.last_build_id
 
+
+.vercel
