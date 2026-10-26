@@ -59,3 +59,4 @@ yarn-error.log*
 **/android/app/release/
 **/.widget_preview/
 **/ios/Flutter/.last_build_id
+
