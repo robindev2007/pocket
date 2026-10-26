@@ -30,7 +30,7 @@ class ApiConstants {
   /// `--dart-define=GOOGLE_CLIENT_ID=your-client-id.apps.googleusercontent.com`
   static const String googleServerClientId = String.fromEnvironment(
     'GOOGLE_CLIENT_ID',
-    defaultValue: '',
+    defaultValue: '815403961158-me03lohln0bp1h4f0ugjtgth1thh5s2o.apps.googleusercontent.com',
   );
 
   // Endpoints
