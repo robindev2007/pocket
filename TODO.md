@@ -109,13 +109,13 @@ Matches `DebtModel` & `DebtRepaymentModel` in mobile app (`../app/lib/data/model
 
 ---
 
-### Phase 5: People / Contact Aggregation (`src/people/`)
+### Phase 5: People / Contact Aggregation (`src/people/`) (Completed)
 
 Matches `mm_people` contacts and debt breakdown by person in the mobile app.
 
-- [ ] **Service & Route (`src/people/`)**:
-  - [ ] `GET /people`: Returns unique list of all persons the user has lent to or borrowed from.
-  - [ ] `GET /people/:name/debts`: Returns all active and settled debts specific to that individual.
+- [x] **Service & Route (`src/people/`)**:
+  - [x] `GET /people`: Returns unique list of all persons the user has lent to or borrowed from with calculated `theyOweMe`, `iOweThem`, `netBalance`, and active/settled counts.
+  - [x] `GET /people/:name/ledger`: Returns all active and settled debts specific to that individual with a chronological statement timeline.
 
 ---
 
