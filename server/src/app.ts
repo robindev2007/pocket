@@ -16,6 +16,14 @@ export const createApp = (): Application => {
   app.use(express.json());
   app.use(express.urlencoded({ extended: true }));
 
+  // Root endpoint
+  app.get('/', (_req: Request, res: Response) => {
+    res.status(200).json({
+      message: 'Pocket API is running',
+      docs: '/health',
+    });
+  });
+
   // Health check endpoint
   app.get('/health', (_req: Request, res: Response) => {
     res.status(200).json({
