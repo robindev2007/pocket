@@ -8,7 +8,7 @@ export class PrismaService extends PrismaClient {
   private readonly pool: pg.Pool;
 
   constructor() {
-    const connectionString = process.env.DATABASE_URL!;
+    const connectionString = (process.env.DATABASE_URL || process.env.PRISMA_DATABASE_URL)!;
     const pool = new pg.Pool({ connectionString });
     const adapter = new PrismaPg(pool);
     super({ adapter });
