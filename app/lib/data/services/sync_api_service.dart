@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import '../../core/constants/api_constants.dart';
@@ -9,6 +10,8 @@ class SyncApiService {
 
   SyncApiService({http.Client? client}) : _client = client ?? http.Client();
 
+  static const Duration _timeout = Duration(seconds: 8);
+
   Map<String, String> _headers(String token) => {
         'Content-Type': 'application/json',
         'Authorization': 'Bearer $token',
@@ -18,18 +21,20 @@ class SyncApiService {
   Future<bool> uploadTransaction(TransactionModel tx, String token) async {
     try {
       final uri = Uri.parse('${ApiConstants.baseUrl}/transactions');
-      final response = await _client.post(
-        uri,
-        headers: _headers(token),
-        body: jsonEncode({
-          'title': tx.title,
-          'amount': tx.amount,
-          'type': tx.isIncome ? 'INCOME' : 'EXPENSE',
-          'date': tx.date.toIso8601String(),
-          if (tx.tag != null) 'tag': tx.tag,
-          if (tx.note != null) 'note': tx.note,
-        }),
-      );
+      final response = await _client
+          .post(
+            uri,
+            headers: _headers(token),
+            body: jsonEncode({
+              'title': tx.title,
+              'amount': tx.amount,
+              'type': tx.isIncome ? 'INCOME' : 'EXPENSE',
+              'date': tx.date.toIso8601String(),
+              if (tx.tag != null) 'tag': tx.tag,
+              if (tx.note != null) 'note': tx.note,
+            }),
+          )
+          .timeout(_timeout);
 
       return response.statusCode >= 200 && response.statusCode < 300;
     } catch (_) {
@@ -41,18 +46,20 @@ class SyncApiService {
   Future<String?> uploadDebt(DebtModel debt, String token) async {
     try {
       final uri = Uri.parse('${ApiConstants.baseUrl}/debts');
-      final response = await _client.post(
-        uri,
-        headers: _headers(token),
-        body: jsonEncode({
-          'personName': debt.personName,
-          'title': debt.title,
-          'amount': debt.amount,
-          'date': debt.date.toIso8601String(),
-          'direction': debt.isTheyOweMe ? 'LENT' : 'BORROWED',
-          if (debt.note != null) 'note': debt.note,
-        }),
-      );
+      final response = await _client
+          .post(
+            uri,
+            headers: _headers(token),
+            body: jsonEncode({
+              'personName': debt.personName,
+              'title': debt.title,
+              'amount': debt.amount,
+              'date': debt.date.toIso8601String(),
+              'direction': debt.isTheyOweMe ? 'LENT' : 'BORROWED',
+              if (debt.note != null) 'note': debt.note,
+            }),
+          )
+          .timeout(_timeout);
 
       if (response.statusCode >= 200 && response.statusCode < 300) {
         final Map<String, dynamic> body =
@@ -74,16 +81,18 @@ class SyncApiService {
   ) async {
     try {
       final uri = Uri.parse('${ApiConstants.baseUrl}/debts/$debtId/repayments');
-      final response = await _client.post(
-        uri,
-        headers: _headers(token),
-        body: jsonEncode({
-          'amount': rep.amount,
-          'date': rep.date.toIso8601String(),
-          if (rep.note != null) 'note': rep.note,
-          'affectsCashBalance': rep.affectsCashBalance,
-        }),
-      );
+      final response = await _client
+          .post(
+            uri,
+            headers: _headers(token),
+            body: jsonEncode({
+              'amount': rep.amount,
+              'date': rep.date.toIso8601String(),
+              if (rep.note != null) 'note': rep.note,
+              'affectsCashBalance': rep.affectsCashBalance,
+            }),
+          )
+          .timeout(_timeout);
 
       return response.statusCode >= 200 && response.statusCode < 300;
     } catch (_) {

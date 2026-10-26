@@ -91,5 +91,60 @@ void main() {
       final id = await service.uploadDebt(debt, 'mock-token-123');
       expect(id, 'server-debt-99');
     });
+
+    test('uploadTransaction returns false on 500 server error', () async {
+      final mockClient = MockClient((request) async {
+        return http.Response('{"error": "Internal Server Error"}', 500);
+      });
+
+      final service = SyncApiService(client: mockClient);
+      final tx = TransactionModel(
+        id: 'tx-err',
+        title: 'Snack',
+        amount: 2.0,
+        type: TransactionType.expense,
+        date: DateTime.now(),
+      );
+
+      final success = await service.uploadTransaction(tx, 'mock-token-123');
+      expect(success, isFalse);
+    });
+
+    test('uploadTransaction returns false on network exception', () async {
+      final mockClient = MockClient((request) async {
+        throw http.ClientException('Connection refused');
+      });
+
+      final service = SyncApiService(client: mockClient);
+      final tx = TransactionModel(
+        id: 'tx-fail',
+        title: 'Coffee',
+        amount: 3.5,
+        type: TransactionType.expense,
+        date: DateTime.now(),
+      );
+
+      final success = await service.uploadTransaction(tx, 'mock-token-123');
+      expect(success, isFalse);
+    });
+
+    test('uploadDebt returns null on 401 Unauthorized or network failure', () async {
+      final mockClient = MockClient((request) async {
+        return http.Response('{"error": "Unauthorized"}', 401);
+      });
+
+      final service = SyncApiService(client: mockClient);
+      final debt = DebtModel(
+        id: 'd-unauth',
+        personName: 'Alex',
+        title: 'Dinner',
+        amount: 40.0,
+        date: DateTime.now(),
+        direction: DebtDirection.theyOweMe,
+      );
+
+      final id = await service.uploadDebt(debt, 'invalid-token');
+      expect(id, isNull);
+    });
   });
 }

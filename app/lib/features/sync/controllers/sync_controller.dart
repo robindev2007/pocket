@@ -1,3 +1,4 @@
+import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../../../data/models/debt_model.dart';
 import '../../../data/models/transaction_model.dart';
@@ -11,6 +12,7 @@ enum SyncState {
   pending,
   syncing,
   synced,
+  error,
 }
 
 class SyncController extends GetxController {
@@ -21,6 +23,7 @@ class SyncController extends GetxController {
 
   final Rx<SyncState> state = SyncState.idle.obs;
   final RxInt pendingCount = 0.obs;
+  final RxString lastError = ''.obs;
 
   bool get isSyncing => state.value == SyncState.syncing;
   bool get hasPending => pendingCount.value > 0;
@@ -29,7 +32,7 @@ class SyncController extends GetxController {
   void onInit() {
     super.onInit();
 
-    // Listen to changes in auth or items to re-evaluate sync status
+    // Listen to auth changes
     ever(AuthController.to.isAuthenticated, (isAuth) {
       if (isAuth) {
         checkPendingStatus();
@@ -40,9 +43,14 @@ class SyncController extends GetxController {
       }
     });
 
+    // Listen to changes in transactions or debts
     if (Get.isRegistered<TrackerController>()) {
-      ever(TrackerController.to.transactions, (_) => checkPendingStatus());
-      ever(TrackerController.to.debts, (_) => checkPendingStatus());
+      ever(TrackerController.to.transactions, (_) {
+        if (!isSyncing) checkPendingStatus();
+      });
+      ever(TrackerController.to.debts, (_) {
+        if (!isSyncing) checkPendingStatus();
+      });
     }
 
     checkPendingStatus();
@@ -69,16 +77,28 @@ class SyncController extends GetxController {
     }
   }
 
-  /// Triggers background upload for all unsynced items
-  Future<void> syncPendingItems() async {
-    if (!AuthController.to.isAuthenticated.value) return;
+  /// Triggers background upload for all unsynced items with full error handling
+  Future<void> syncPendingItems({bool showFeedback = false}) async {
+    if (!AuthController.to.isAuthenticated.value) {
+      state.value = SyncState.idle;
+      return;
+    }
+
     if (isSyncing) return;
 
     final token = await _storageService.loadAuthToken();
-    if (token == null || token.isEmpty) return;
+    if (token == null || token.isEmpty) {
+      state.value = SyncState.idle;
+      return;
+    }
 
     final tracker = TrackerController.to;
     state.value = SyncState.syncing;
+    lastError.value = '';
+
+    bool anyFailure = false;
+    int syncedTxCount = 0;
+    int syncedDebtCount = 0;
 
     try {
       // 1. Sync pending transactions
@@ -87,8 +107,10 @@ class SyncController extends GetxController {
         if (!tx.isSynced) {
           final success = await _syncApiService.uploadTransaction(tx, token);
           if (success) {
+            syncedTxCount++;
             updatedTxList.add(tx.copyWith(isSynced: true));
           } else {
+            anyFailure = true;
             updatedTxList.add(tx);
           }
         } else {
@@ -104,8 +126,10 @@ class SyncController extends GetxController {
         if (!debt.isSynced) {
           final serverId = await _syncApiService.uploadDebt(debt, token);
           if (serverId != null) {
+            syncedDebtCount++;
             updatedDebtList.add(debt.copyWith(isSynced: true));
           } else {
+            anyFailure = true;
             updatedDebtList.add(debt);
           }
         } else {
@@ -114,8 +138,46 @@ class SyncController extends GetxController {
       }
       tracker.debts.assignAll(updatedDebtList);
       await _storageService.saveDebts(updatedDebtList);
+    } catch (e) {
+      anyFailure = true;
+      lastError.value = e.toString();
     } finally {
-      checkPendingStatus();
+      // Re-evaluate pending count
+      final remainingTx = tracker.transactions.where((t) => !t.isSynced).length;
+      final remainingDebts = tracker.debts.where((d) => !d.isSynced).length;
+      final remainingTotal = remainingTx + remainingDebts;
+
+      pendingCount.value = remainingTotal;
+
+      if (remainingTotal == 0) {
+        state.value = SyncState.synced;
+        if (showFeedback && (syncedTxCount > 0 || syncedDebtCount > 0)) {
+          Get.snackbar(
+            'Synced',
+            'All items are successfully synced with the cloud.',
+            snackPosition: SnackPosition.BOTTOM,
+            backgroundColor: Colors.green.withValues(alpha: 0.9),
+            colorText: Colors.white,
+            duration: const Duration(seconds: 3),
+            margin: const EdgeInsets.all(16),
+          );
+        }
+      } else if (anyFailure) {
+        state.value = SyncState.error;
+        if (showFeedback) {
+          Get.snackbar(
+            'Sync Incomplete',
+            'Could not reach server. $remainingTotal item(s) remain safely saved on device.',
+            snackPosition: SnackPosition.BOTTOM,
+            backgroundColor: Colors.orange.withValues(alpha: 0.9),
+            colorText: Colors.white,
+            duration: const Duration(seconds: 4),
+            margin: const EdgeInsets.all(16),
+          );
+        }
+      } else {
+        state.value = SyncState.pending;
+      }
     }
   }
 }
