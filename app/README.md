@@ -1,4 +1,4 @@
-# Pocket (`pocket-expense-tracking-app`)
+# Pocket
 
 <p align="center">
   <img src="assets/icon/pocket_app_icon.jpg" width="128" height="128" alt="Pocket App Icon" style="border-radius: 28px;" />
@@ -54,10 +54,10 @@
 
 ```bash
 # Clone the repository
-git clone https://github.com/your-username/pocket-expense-tracking-app.git
+git clone https://github.com/robindev2007/pocket.git
 
 # Navigate into the project directory
-cd pocket-expense-tracking-app
+cd pocket/app
 
 # Fetch dependencies
 flutter pub get

@@ -1,4 +1,4 @@
-# Pocket (`pocket-expense-tracking-app`)
+# Pocket
 
 <p align="center">
   <img src="app/assets/icon/pocket_app_icon.jpg" width="120" height="120" alt="Pocket App Icon" style="border-radius: 28px;" />
@@ -23,7 +23,7 @@
 This repository is organized as a clean, unified **Monorepo**:
 
 ```
-pocket-expense-tracking-app/
+pocket/
 ├── app/                 # Flutter Mobile & Web Client (Offline-First, GetX)
 ├── server/              # Bun + Express 5 + TypeScript + Prisma 7 Backend
 ├── SYSTEM_DESIGN.md     # System Architecture, Database Design & Delta Sync Protocol
