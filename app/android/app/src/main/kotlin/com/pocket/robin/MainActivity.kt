@@ -1,4 +1,4 @@
-package com.example.manage_money
+package com.pocket.robin
 
 import io.flutter.embedding.android.FlutterActivity
 
