@@ -4,6 +4,7 @@ import '../../../data/models/debt_model.dart';
 import '../../../data/models/transaction_model.dart';
 import '../../../data/models/user_profile_model.dart';
 import '../../../data/services/storage_service.dart';
+import '../../sync/controllers/sync_controller.dart';
 
 enum TimePeriod {
   week,
@@ -208,23 +209,32 @@ class TrackerController extends GetxController {
       date: date,
       tag: tag?.trim().isEmpty ?? true ? null : tag?.trim(),
       note: note?.trim().isEmpty ?? true ? null : note?.trim(),
+      isSynced: false,
     );
 
     transactions.add(newTransaction);
     await _storageService.saveTransactions(transactions);
+    _triggerSync();
   }
 
   Future<void> updateTransaction(TransactionModel updated) async {
     final index = transactions.indexWhere((t) => t.id == updated.id);
     if (index != -1) {
-      transactions[index] = updated;
+      transactions[index] = updated.copyWith(isSynced: false);
       await _storageService.saveTransactions(transactions);
+      _triggerSync();
     }
   }
 
   Future<void> deleteTransaction(String id) async {
     transactions.removeWhere((t) => t.id == id);
     await _storageService.saveTransactions(transactions);
+  }
+
+  void _triggerSync() {
+    if (Get.isRegistered<SyncController>()) {
+      SyncController.to.syncPendingItems();
+    }
   }
 
   // --- People Actions ---
@@ -261,10 +271,12 @@ class TrackerController extends GetxController {
       date: date,
       direction: direction,
       note: note?.trim().isEmpty ?? true ? null : note?.trim(),
+      isSynced: false,
     );
 
     debts.add(newDebt);
     await _storageService.saveDebts(debts);
+    _triggerSync();
   }
 
   Future<void> recordRepayment({
@@ -284,12 +296,14 @@ class TrackerController extends GetxController {
       date: date,
       note: note?.trim().isEmpty ?? true ? null : note?.trim(),
       affectsCashBalance: affectsCashBalance,
+      isSynced: false,
     );
 
     final updatedRepayments = List<DebtRepaymentModel>.from(targetDebt.repayments)..add(repayment);
-    final updatedDebt = targetDebt.copyWith(repayments: updatedRepayments);
+    final updatedDebt = targetDebt.copyWith(repayments: updatedRepayments, isSynced: false);
     debts[index] = updatedDebt;
     await _storageService.saveDebts(debts);
+    _triggerSync();
 
     // If repayment was in cash, record corresponding cash transaction
     if (affectsCashBalance) {

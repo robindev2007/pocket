@@ -3,6 +3,8 @@ import 'package:get/get.dart';
 
 import '../../../../core/theme/theme.dart';
 import '../../../auth/controllers/auth_controller.dart';
+import '../../../sync/controllers/sync_controller.dart';
+import '../../../sync/presentation/widgets/sync_status_badge.dart';
 import '../../controllers/tracker_controller.dart';
 import '../dialogs/welcome_name_dialog.dart';
 import 'dashboard_tab.dart';
@@ -25,6 +27,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
     super.initState();
     Get.put(AuthController());
     Get.put(TrackerController());
+    Get.put(SyncController());
     _checkFirstLaunchOnboarding();
   }
 
@@ -109,6 +112,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
                 ),
               ),
         actions: [
+          const SyncStatusBadge(),
           // Theme Switcher Button matching the circular icon in screenshot
           Container(
             margin: const EdgeInsets.only(right: 16),

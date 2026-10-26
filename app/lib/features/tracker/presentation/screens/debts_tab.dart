@@ -5,6 +5,7 @@ import '../../../../core/theme/theme.dart';
 import '../../../../core/utils/currency_formatter.dart';
 import '../../../../core/widgets/widgets.dart';
 import '../../../../data/models/debt_model.dart';
+import '../../../sync/presentation/widgets/item_sync_dot.dart';
 import '../../controllers/tracker_controller.dart';
 import '../dialogs/add_debt_dialog.dart';
 import '../dialogs/record_repayment_dialog.dart';
@@ -258,13 +259,22 @@ class _DebtsTabState extends State<DebtsTab> {
                                     ],
                                   ),
                                   const SizedBox(height: 2),
-                                  Text(
-                                    debt.title,
-                                    style: TextStyle(
-                                      fontSize: 13,
-                                      fontWeight: FontWeight.w500,
-                                      color: colorScheme.onSurface,
-                                    ),
+                                  Row(
+                                    children: [
+                                      Flexible(
+                                        child: Text(
+                                          debt.title,
+                                          style: TextStyle(
+                                            fontSize: 13,
+                                            fontWeight: FontWeight.w500,
+                                            color: colorScheme.onSurface,
+                                          ),
+                                          maxLines: 1,
+                                          overflow: TextOverflow.ellipsis,
+                                        ),
+                                      ),
+                                      ItemSyncDot(isSynced: debt.isSynced),
+                                    ],
                                   ),
                                   const SizedBox(height: 2),
                                   Text(

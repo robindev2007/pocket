@@ -14,6 +14,7 @@ class TransactionModel {
     required this.date,
     this.tag,
     this.note,
+    this.isSynced = false,
   });
 
   final String id;
@@ -23,6 +24,7 @@ class TransactionModel {
   final DateTime date;
   final String? tag;
   final String? note;
+  final bool isSynced;
 
   bool get isIncome => type == TransactionType.income;
   bool get isExpense => type == TransactionType.expense;
@@ -35,6 +37,7 @@ class TransactionModel {
     DateTime? date,
     String? tag,
     String? note,
+    bool? isSynced,
   }) {
     return TransactionModel(
       id: id ?? this.id,
@@ -44,6 +47,7 @@ class TransactionModel {
       date: date ?? this.date,
       tag: tag ?? this.tag,
       note: note ?? this.note,
+      isSynced: isSynced ?? this.isSynced,
     );
   }
 
@@ -56,6 +60,7 @@ class TransactionModel {
       'date': date.toIso8601String(),
       'tag': tag,
       'note': note,
+      'isSynced': isSynced,
     };
   }
 
@@ -70,7 +75,7 @@ class TransactionModel {
       date: DateTime.parse(json['date'] as String),
       tag: json['tag'] as String?,
       note: json['note'] as String?,
+      isSynced: json['isSynced'] as bool? ?? false,
     );
   }
 }
-

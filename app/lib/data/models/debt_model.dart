@@ -13,6 +13,7 @@ class DebtRepaymentModel {
     required this.date,
     this.note,
     this.affectsCashBalance = true,
+    this.isSynced = false,
   });
 
   final String id;
@@ -20,6 +21,25 @@ class DebtRepaymentModel {
   final DateTime date;
   final String? note;
   final bool affectsCashBalance;
+  final bool isSynced;
+
+  DebtRepaymentModel copyWith({
+    String? id,
+    double? amount,
+    DateTime? date,
+    String? note,
+    bool? affectsCashBalance,
+    bool? isSynced,
+  }) {
+    return DebtRepaymentModel(
+      id: id ?? this.id,
+      amount: amount ?? this.amount,
+      date: date ?? this.date,
+      note: note ?? this.note,
+      affectsCashBalance: affectsCashBalance ?? this.affectsCashBalance,
+      isSynced: isSynced ?? this.isSynced,
+    );
+  }
 
   Map<String, dynamic> toJson() {
     return {
@@ -28,6 +48,7 @@ class DebtRepaymentModel {
       'date': date.toIso8601String(),
       'note': note,
       'affectsCashBalance': affectsCashBalance,
+      'isSynced': isSynced,
     };
   }
 
@@ -38,6 +59,7 @@ class DebtRepaymentModel {
       date: DateTime.parse(json['date'] as String),
       note: json['note'] as String?,
       affectsCashBalance: json['affectsCashBalance'] as bool? ?? true,
+      isSynced: json['isSynced'] as bool? ?? false,
     );
   }
 }
@@ -52,6 +74,7 @@ class DebtModel {
     required this.direction,
     List<DebtRepaymentModel>? repayments,
     this.note,
+    this.isSynced = false,
   }) : repayments = repayments ?? [];
 
   final String id;
@@ -62,6 +85,7 @@ class DebtModel {
   final DebtDirection direction;
   final List<DebtRepaymentModel> repayments;
   final String? note;
+  final bool isSynced;
 
   bool get isTheyOweMe => direction == DebtDirection.theyOweMe;
   bool get isIOweThem => direction == DebtDirection.iOweThem;
@@ -82,6 +106,7 @@ class DebtModel {
     DebtDirection? direction,
     List<DebtRepaymentModel>? repayments,
     String? note,
+    bool? isSynced,
   }) {
     return DebtModel(
       id: id ?? this.id,
@@ -92,6 +117,7 @@ class DebtModel {
       direction: direction ?? this.direction,
       repayments: repayments ?? List.from(this.repayments),
       note: note ?? this.note,
+      isSynced: isSynced ?? this.isSynced,
     );
   }
 
@@ -105,6 +131,7 @@ class DebtModel {
       'direction': direction.name,
       'repayments': repayments.map((r) => r.toJson()).toList(),
       'note': note,
+      'isSynced': isSynced,
     };
   }
 
@@ -124,7 +151,7 @@ class DebtModel {
               .toList() ??
           [],
       note: json['note'] as String?,
+      isSynced: json['isSynced'] as bool? ?? false,
     );
   }
 }
-
