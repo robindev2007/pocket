@@ -14,6 +14,14 @@
       },
       "oauth_client": [
         {
+          "client_id": "815403961158-psfeum318msa926l17ljvsur1k0kdhpn.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.pocket.robin",
+            "certificate_hash": "b1f2e08ab98931caa512a958442f043e48b2e8b0"
+          }
+        },
+        {
           "client_id": "815403961158-me03lohln0bp1h4f0ugjtgth1thh5s2o.apps.googleusercontent.com",
           "client_type": 3
         }
