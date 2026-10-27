@@ -6,17 +6,57 @@ on:
       - main
     tags:
       - 'v*'
+    paths:
+      - 'app/**'
+      - '.github/workflows/release.yml'
   pull_request:
     branches:
       - main
+    paths:
+      - 'app/**'
+      - '.github/workflows/release.yml'
   workflow_dispatch:
 
 permissions:
   contents: write
 
 jobs:
-  build:
-    name: Build & Test Android APK
+  test:
+    name: Code Quality & Unit Tests
+    runs-on: ubuntu-latest
+
+    defaults:
+      run:
+        working-directory: app
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: 'stable'
+          cache: true
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Run code analysis & unit tests
+        run: |
+          flutter analyze
+          flutter test
+
+  build-release:
+    name: Build & Release APK
+    needs: [test]
+    if: startsWith(github.ref, 'refs/tags/v') || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
 
     defaults:
@@ -44,11 +84,6 @@ jobs:
 
       - name: Install dependencies
         run: flutter pub get
-
-      - name: Run code analysis & unit tests
-        run: |
-          flutter analyze
-          flutter test
 
       - name: Build Universal Release APK
         run: flutter build apk --release
