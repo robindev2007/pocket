@@ -264,6 +264,12 @@ class AiController extends GetxController {
             final exp = toolOutput['totalExpenses'] ?? 0.0;
             assistantMsg.text =
                 'Your current balance is **\$$balance**.\n* Total Income: \$$inc\n* Total Expenses: \$$exp';
+          } else if (toolName == 'add_batch_transactions') {
+            final count = toolOutput['count'] ?? 0;
+            final total = toolOutput['totalAmount'] ?? 0.0;
+            final curr = toolOutput['currency'] ?? '';
+            assistantMsg.text =
+                'Added **$count transactions separately**, total: **$curr$total**.';
           } else {
             assistantMsg.text = 'Completed ${toolName.replaceAll('_', ' ')}.';
           }
@@ -315,6 +321,69 @@ class AiController extends GetxController {
     }
   }
 
+  Future<Map<String, dynamic>> _executeBatchTransactions(
+    TrackerController controller,
+    Map<String, dynamic> args,
+  ) async {
+    final rawList = args['transactions'] ?? args['items'];
+    final List<dynamic> itemsList = rawList is List ? rawList : [];
+    if (itemsList.isEmpty) {
+      return {'success': false, 'message': 'No transactions provided in batch'};
+    }
+
+    final List<Map<String, dynamic>> recordedItems = [];
+    double totalSum = 0.0;
+
+    for (final rawItem in itemsList) {
+      if (rawItem is! Map) continue;
+      final item = Map<String, dynamic>.from(rawItem);
+      final title = item['title'] as String? ?? 'Expense';
+      final amount = (item['amount'] as num?)?.toDouble() ?? 0.0;
+      if (amount <= 0) continue;
+
+      final typeStr = item['type'] as String? ?? 'expense';
+      final type = typeStr.toLowerCase() == 'income'
+          ? TransactionType.income
+          : TransactionType.expense;
+      final tag = item['tag'] as String?;
+      final note = item['note'] as String?;
+
+      DateTime date = DateTime.now();
+      if (item['date'] != null) {
+        try {
+          date = DateTime.parse(item['date'] as String);
+        } catch (_) {}
+      }
+
+      await controller.addTransaction(
+        title: title,
+        amount: amount,
+        type: type,
+        date: date,
+        tag: tag,
+        note: note,
+      );
+
+      totalSum += amount;
+      recordedItems.add({
+        'title': title,
+        'amount': amount,
+        'type': typeStr,
+        'tag': tag ?? 'General',
+      });
+    }
+
+    return {
+      'success': true,
+      'message':
+          'Successfully added ${recordedItems.length} transactions separately',
+      'count': recordedItems.length,
+      'totalAmount': totalSum,
+      'items': recordedItems,
+      'currency': controller.userProfile.value.currency,
+    };
+  }
+
   Future<Map<String, dynamic>> _executeLocalTool(
     String toolName,
     Map<String, dynamic> args,
@@ -324,6 +393,9 @@ class AiController extends GetxController {
 
     switch (toolName) {
       case 'add_transaction':
+        if (args['transactions'] != null || args['items'] != null) {
+          return _executeBatchTransactions(controller, args);
+        }
         final title = args['title'] as String? ?? 'Expense';
         final amount = (args['amount'] as num?)?.toDouble() ?? 0.0;
         final typeStr = args['type'] as String? ?? 'expense';
@@ -358,6 +430,9 @@ class AiController extends GetxController {
           'date': date.toIso8601String().split('T')[0],
           'currency': controller.userProfile.value.currency,
         };
+
+      case 'add_batch_transactions':
+        return _executeBatchTransactions(controller, args);
 
       case 'update_transaction':
         final id = args['id'] as String?;

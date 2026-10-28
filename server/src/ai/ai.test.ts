@@ -9,6 +9,7 @@ describe('AI Feature', () => {
     expect(AI_TOOLS.length).toBeGreaterThanOrEqual(8);
     const names = AI_TOOLS.map((t) => t.name);
     expect(names).toContain('add_transaction');
+    expect(names).toContain('add_batch_transactions');
     expect(names).toContain('update_transaction');
     expect(names).toContain('delete_transaction');
     expect(names).toContain('get_transactions');

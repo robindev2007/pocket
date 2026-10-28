@@ -57,6 +57,52 @@ export const AI_TOOLS: FunctionToolDeclaration[] = [
     },
   },
   {
+    name: 'add_batch_transactions',
+    description:
+      'Add multiple expenses or income transactions in a single batch. Use whenever the user lists multiple items, multiple expenses, or a receipt/shopping list to be recorded separately.',
+    parameters: {
+      type: 'object',
+      properties: {
+        transactions: {
+          type: 'array',
+          description: 'List of individual transaction objects to add separately.',
+          items: {
+            type: 'object',
+            properties: {
+              title: {
+                type: 'string',
+                description: 'Title of the item or expense (e.g. "Blazer", "Pant", "Juta", "Shirt", "Headphone").',
+              },
+              amount: {
+                type: 'number',
+                description: 'Monetary amount for this item (must be positive).',
+              },
+              type: {
+                type: 'string',
+                enum: ['expense', 'income'],
+                description: 'Whether this is an expense or an income (default: "expense").',
+              },
+              tag: {
+                type: 'string',
+                description: 'Category tag such as Shopping, Food, Transport, Bills, Groceries, Electronics, Health, etc.',
+              },
+              note: {
+                type: 'string',
+                description: 'Optional note or details.',
+              },
+              date: {
+                type: 'string',
+                description: 'Optional date (YYYY-MM-DD). Defaults to current date if omitted.',
+              },
+            },
+            required: ['title', 'amount'],
+          },
+        },
+      },
+      required: ['transactions'],
+    },
+  },
+  {
     name: 'update_transaction',
     description:
       'Update or edit an existing expense or income record (e.g. change amount, title, date, category tag, or note).',
@@ -372,6 +418,13 @@ export function validateAiToolCall(toolCall: { name: string; arguments?: Record<
     }
   }
 
+  if (toolCall.name === 'add_batch_transactions') {
+    const list = args.transactions || args.items;
+    if (!Array.isArray(list) || list.length === 0) {
+      return { valid: false, error: 'Batch transactions must contain an array of items' };
+    }
+  }
+
   if (toolCall.name === 'add_debt') {
     if (typeof args.amount === 'number' && args.amount <= 0) {
       return { valid: false, error: 'Debt amount must be a positive number' };
@@ -437,7 +490,11 @@ Core Financial Principles & Tool Usage:
    - For destructive actions (deletions), specify exactly which record was deleted.
    - When the user asks to "delete all", "clear all", or "reset transactions", invoke delete_transaction with all: 'true' (or delete_debt if clearing debts) to carry out the deletion.
 6. Ambiguity: If an amount or required parameter is missing or unclear, ask a short clarifying question before executing.
-7. Tone: Friendly, concise, professional, and clear. Format responses with clean Markdown (bold numbers, bullet points, concise tables or lists when helpful).
+7. Batch & Multi-Item Expenses:
+   - When a user lists multiple items to add separately (e.g. "blazer = 8000, pant = 3000, juta = 3000, shirt = 3000..." or a shopping list / grocery receipt), ALWAYS invoke the "add_batch_transactions" tool.
+   - Assign appropriate category tags to each item based on its name (e.g. Clothes/Shopping for blazer/pant/juta/shirt, Electronics for headphone, Transport/Food for jataiat_khawa).
+   - CRITICAL: If the user includes a formula or summary line like "total = blazer + pant + ...", DO NOT add the "total" as a separate expense. Calculate or verify the total sum from the recorded items, and list each recorded item and the combined total in your confirmation.
+8. Tone: Friendly, concise, professional, and clear. Format responses with clean Markdown (bold numbers, bullet points, concise tables or lists when helpful).
 
 Today's date is: ${new Date().toISOString().split('T')[0]}.`;
 

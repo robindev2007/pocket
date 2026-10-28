@@ -560,5 +560,38 @@ void main() {
     expect(mockService.lastSentUserContext!.containsKey('isLoggedIn'), isTrue);
     expect(mockService.lastSentUserContext!.containsKey('autoSyncEnabled'), isTrue);
   });
+
+  test('AiController executes add_batch_transactions tool locally and adds all items', () async {
+    final mockService = MockAiApiService();
+    mockService.mockResponse = {
+      'type': 'tool_call',
+      'toolCall': {
+        'name': 'add_batch_transactions',
+        'arguments': {
+          'transactions': [
+            {'title': 'Blazer', 'amount': 8000.0, 'type': 'expense', 'tag': 'Shopping'},
+            {'title': 'Pant', 'amount': 3000.0, 'type': 'expense', 'tag': 'Shopping'},
+            {'title': 'Juta', 'amount': 3000.0, 'type': 'expense', 'tag': 'Shopping'},
+            {'title': 'Shirt', 'amount': 3000.0, 'type': 'expense', 'tag': 'Shopping'},
+            {'title': 'Headphone', 'amount': 3600.0, 'type': 'expense', 'tag': 'Electronics'},
+            {'title': 'Jataiat Khawa', 'amount': 500.0, 'type': 'expense', 'tag': 'Transport'},
+          ],
+        },
+      },
+      'provider': 'gemini',
+    };
+
+    final trackerController = TrackerController.to;
+    final initialCount = trackerController.transactions.length;
+
+    final aiController = Get.put(AiController(apiService: mockService));
+    await aiController.sendMessage('Add these expenses separately');
+
+    expect(trackerController.transactions.length, initialCount + 6);
+    expect(mockService.lastSentToolResult, isNotNull);
+    expect(mockService.lastSentToolResult!['name'], 'add_batch_transactions');
+    expect(mockService.lastSentToolResult!['result']['count'], 6);
+    expect(mockService.lastSentToolResult!['result']['totalAmount'], 21100.0);
+  });
 }
 
