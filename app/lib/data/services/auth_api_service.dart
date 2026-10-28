@@ -18,18 +18,26 @@ class AuthApiService {
 
   AuthApiService({http.Client? client}) : _client = client ?? http.Client();
 
+  /// Default Google Web OAuth Client ID from google-services.json (client_type: 3)
+  /// Used as immediate reliable fallback if server environment variable is not configured.
+  static const String defaultWebClientId =
+      '815403961158-me03lohln0bp1h4f0ugjtgth1thh5s2o.apps.googleusercontent.com';
+
   /// Retrieves Google OAuth Web Client ID dynamically from backend server
   Future<String?> getGoogleClientId() async {
     try {
       final uri = Uri.parse(ApiConstants.authConfig);
-      final response = await _client.get(uri).timeout(const Duration(seconds: 5));
+      final response = await _client.get(uri).timeout(const Duration(seconds: 4));
       if (response.statusCode >= 200 && response.statusCode < 300) {
         final body = jsonDecode(response.body) as Map<String, dynamic>;
         final data = body['data'] as Map<String, dynamic>?;
-        return data?['googleClientId'] as String?;
+        final serverId = data?['googleClientId'] as String?;
+        if (serverId != null && serverId.isNotEmpty) {
+          return serverId;
+        }
       }
     } catch (_) {}
-    return null;
+    return defaultWebClientId;
   }
 
   /// Exchanges a Google ID Token with backend server for an app JWT and user profile
