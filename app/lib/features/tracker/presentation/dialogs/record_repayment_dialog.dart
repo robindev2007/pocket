@@ -32,7 +32,6 @@ class _RecordRepaymentDialogState extends State<RecordRepaymentDialog> {
   late final TextEditingController _amountController;
   late final TextEditingController _noteController;
   late DateTime _selectedDate;
-  bool _affectsCashBalance = true;
   String? _errorMessage;
 
   @override
@@ -78,7 +77,6 @@ class _RecordRepaymentDialogState extends State<RecordRepaymentDialog> {
       amount: parsed,
       date: _selectedDate,
       note: _noteController.text.trim().isNotEmpty ? _noteController.text.trim() : null,
-      affectsCashBalance: _affectsCashBalance,
     );
 
     Navigator.pop(context);
@@ -184,45 +182,6 @@ class _RecordRepaymentDialogState extends State<RecordRepaymentDialog> {
                 ),
               ),
               keyboardType: const TextInputType.numberWithOptions(decimal: true),
-            ),
-            AppSizes.gapH16,
-
-            // Cash Transaction Toggle
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-              decoration: BoxDecoration(
-                color: customColors.surfaceHover,
-                borderRadius: AppSizes.borderRadiusMd,
-              ),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'Update Cash Balance',
-                          style: TextStyle(
-                            fontSize: 13,
-                            fontWeight: FontWeight.w600,
-                            color: colorScheme.onSurface,
-                          ),
-                        ),
-                        Text(
-                          widget.debt.isTheyOweMe
-                              ? 'Cash received increases cash balance.'
-                              : 'Cash paid out reduces cash balance.',
-                          style: TextStyle(fontSize: 11.5, color: customColors.subtleText),
-                        ),
-                      ],
-                    ),
-                  ),
-                  Switch.adaptive(
-                    value: _affectsCashBalance,
-                    onChanged: (val) => setState(() => _affectsCashBalance = val),
-                  ),
-                ],
-              ),
             ),
             AppSizes.gapH16,
 

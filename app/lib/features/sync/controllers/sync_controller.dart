@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../../../data/models/debt_model.dart';
@@ -30,6 +31,8 @@ class SyncController extends GetxController {
   final Rx<SyncState> state = SyncState.idle.obs;
   final RxInt pendingCount = 0.obs;
   final RxString lastError = ''.obs;
+  final Rx<DateTime?> lastSyncedAt = Rx<DateTime?>(null);
+  Timer? _reconnectTimer;
 
   bool get isSyncing => state.value == SyncState.syncing;
   bool get hasPending => pendingCount.value > 0;
@@ -37,6 +40,19 @@ class SyncController extends GetxController {
   @override
   void onInit() {
     super.onInit();
+    _storageService.loadLastSyncedAt().then((val) => lastSyncedAt.value = val);
+
+    // Auto-sync pending items when network is restored
+    if (!Get.testMode) {
+      _reconnectTimer = Timer.periodic(const Duration(seconds: 15), (_) {
+        if (hasPending &&
+            !isSyncing &&
+            Get.isRegistered<AuthController>() &&
+            AuthController.to.isAuthenticated.value) {
+          syncPendingItems();
+        }
+      });
+    }
 
     // Listen to auth changes
     if (Get.isRegistered<AuthController>()) {
@@ -64,6 +80,12 @@ class SyncController extends GetxController {
     checkPendingStatus();
   }
 
+  @override
+  void onClose() {
+    _reconnectTimer?.cancel();
+    super.onClose();
+  }
+
   void checkPendingStatus() {
     if (!Get.isRegistered<AuthController>() ||
         !AuthController.to.isAuthenticated.value) {
@@ -77,7 +99,9 @@ class SyncController extends GetxController {
     final tracker = TrackerController.to;
     final unsyncedTx = tracker.transactions.where((t) => !t.isSynced).length;
     final unsyncedDebts = tracker.debts.where((d) => !d.isSynced).length;
-    final total = unsyncedTx + unsyncedDebts;
+    final unsyncedRepayments = tracker.debts
+        .fold(0, (sum, d) => sum + d.repayments.where((r) => !r.isSynced).length);
+    final total = unsyncedTx + unsyncedDebts + unsyncedRepayments;
 
     pendingCount.value = total;
 
@@ -173,6 +197,9 @@ class SyncController extends GetxController {
       await _storageService.savePeople(tracker.people);
 
       state.value = SyncState.synced;
+      final now = DateTime.now();
+      lastSyncedAt.value = now;
+      await _storageService.saveLastSyncedAt(now);
 
       // 7. Push any remaining offline creations to the server
       await syncPendingItems();
@@ -215,10 +242,10 @@ class SyncController extends GetxController {
       final updatedTxList = <TransactionModel>[];
       for (final tx in tracker.transactions) {
         if (!tx.isSynced) {
-          final success = await _syncApiService.uploadTransaction(tx, token);
-          if (success) {
+          final serverId = await _syncApiService.uploadTransaction(tx, token);
+          if (serverId != null) {
             syncedTxCount++;
-            updatedTxList.add(tx.copyWith(isSynced: true));
+            updatedTxList.add(tx.copyWith(id: serverId, isSynced: true));
           } else {
             anyFailure = true;
             updatedTxList.add(tx);
@@ -230,21 +257,44 @@ class SyncController extends GetxController {
       tracker.transactions.assignAll(updatedTxList);
       await _storageService.saveTransactions(updatedTxList);
 
-      // 2. Sync pending debts
+      // 2. Sync pending debts and repayments
       final updatedDebtList = <DebtModel>[];
       for (final debt in tracker.debts) {
-        if (!debt.isSynced) {
-          final serverId = await _syncApiService.uploadDebt(debt, token);
+        var currentDebt = debt;
+        if (!currentDebt.isSynced) {
+          final serverId = await _syncApiService.uploadDebt(currentDebt, token);
           if (serverId != null) {
             syncedDebtCount++;
-            updatedDebtList.add(debt.copyWith(isSynced: true));
+            currentDebt = currentDebt.copyWith(id: serverId, isSynced: true);
           } else {
             anyFailure = true;
-            updatedDebtList.add(debt);
           }
-        } else {
-          updatedDebtList.add(debt);
         }
+
+        // Sync pending repayments if debt is synced
+        if (currentDebt.isSynced && currentDebt.repayments.any((r) => !r.isSynced)) {
+          final updatedRepayments = <DebtRepaymentModel>[];
+          for (final rep in currentDebt.repayments) {
+            if (!rep.isSynced) {
+              final repSuccess = await _syncApiService.uploadRepayment(
+                currentDebt.id,
+                rep,
+                token,
+              );
+              if (repSuccess) {
+                updatedRepayments.add(rep.copyWith(isSynced: true));
+              } else {
+                anyFailure = true;
+                updatedRepayments.add(rep);
+              }
+            } else {
+              updatedRepayments.add(rep);
+            }
+          }
+          currentDebt = currentDebt.copyWith(repayments: updatedRepayments);
+        }
+
+        updatedDebtList.add(currentDebt);
       }
       tracker.debts.assignAll(updatedDebtList);
       await _storageService.saveDebts(updatedDebtList);
@@ -255,12 +305,17 @@ class SyncController extends GetxController {
       // Re-evaluate pending count
       final remainingTx = tracker.transactions.where((t) => !t.isSynced).length;
       final remainingDebts = tracker.debts.where((d) => !d.isSynced).length;
-      final remainingTotal = remainingTx + remainingDebts;
+      final remainingRep = tracker.debts
+          .fold(0, (sum, d) => sum + d.repayments.where((r) => !r.isSynced).length);
+      final remainingTotal = remainingTx + remainingDebts + remainingRep;
 
       pendingCount.value = remainingTotal;
 
       if (remainingTotal == 0) {
         state.value = SyncState.synced;
+        final now = DateTime.now();
+        lastSyncedAt.value = now;
+        await _storageService.saveLastSyncedAt(now);
         if (showFeedback && (syncedTxCount > 0 || syncedDebtCount > 0)) {
           Get.snackbar(
             'Synced',

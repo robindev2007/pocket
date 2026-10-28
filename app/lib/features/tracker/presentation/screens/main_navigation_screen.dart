@@ -3,6 +3,7 @@ import 'package:get/get.dart';
 
 import '../../../../core/theme/theme.dart';
 import '../../../auth/controllers/auth_controller.dart';
+import '../../../ai/presentation/screens/ai_chat_screen.dart';
 import '../../../sync/controllers/sync_controller.dart';
 import '../../../sync/presentation/widgets/sync_status_badge.dart';
 import '../../controllers/tracker_controller.dart';
@@ -112,7 +113,23 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
                 ),
               ),
         actions: [
-          const SyncStatusBadge(),
+          // AI Assistant Button
+          Container(
+            margin: const EdgeInsets.only(right: 8),
+            decoration: BoxDecoration(
+              color: colorScheme.primary.withValues(alpha: 0.12),
+              shape: BoxShape.circle,
+            ),
+            child: IconButton(
+              tooltip: 'AI Assistant',
+              icon: Icon(
+                Icons.auto_awesome_rounded,
+                size: 20,
+                color: colorScheme.primary,
+              ),
+              onPressed: () => AiChatScreen.navigate(context),
+            ),
+          ),
           // Theme Switcher Button matching the circular icon in screenshot
           Container(
             margin: const EdgeInsets.only(right: 16),

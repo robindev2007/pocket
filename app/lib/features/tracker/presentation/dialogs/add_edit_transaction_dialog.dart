@@ -409,9 +409,22 @@ class _AddEditTransactionDialogState extends State<AddEditTransactionDialog> {
               runSpacing: 8,
               children: defaultTags.map((tag) {
                 final isSelected = _selectedTag == tag;
+                final tagColor = AppColors.getCategoryColor(
+                  tag,
+                  isIncome: _selectedType == TransactionType.income,
+                );
                 return AppFilterPill(
                   label: tag,
                   isSelected: isSelected,
+                  accentColor: tagColor,
+                  icon: Container(
+                    width: 7,
+                    height: 7,
+                    decoration: BoxDecoration(
+                      color: isSelected ? Colors.white : tagColor,
+                      shape: BoxShape.circle,
+                    ),
+                  ),
                   onTap: () {
                     setState(() {
                       _selectedTag = isSelected ? null : tag;

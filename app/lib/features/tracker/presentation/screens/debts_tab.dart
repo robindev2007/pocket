@@ -464,11 +464,11 @@ class _DebtsTabState extends State<DebtsTab> {
     if (summary.theyOweUser) {
       statusColor = const Color(0xFF059669); // Emerald
       statusText = 'Owes you';
-      balanceText = '+ ${CurrencyFormatter.format(summary.theyOweMe)}';
+      balanceText = '+ ${CurrencyFormatter.format(summary.netBalance.abs())}';
     } else if (summary.userOwesThem) {
       statusColor = const Color(0xFFD97706); // Amber
       statusText = 'You owe';
-      balanceText = '- ${CurrencyFormatter.format(summary.iOweThem)}';
+      balanceText = '- ${CurrencyFormatter.format(summary.netBalance.abs())}';
     } else {
       statusColor = isDark ? Colors.white54 : const Color(0xFF64748B);
       statusText = 'All settled';

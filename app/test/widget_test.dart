@@ -115,7 +115,6 @@ void main() {
     expect(controller.totalIncome, 8500.0);
     expect(controller.totalExpenses, 3245.50);
     expect(controller.totalOwedToMe, 500.0);
-    expect(controller.adjustedBalance, 5754.50);
 
     // Navigate to STATS (Transactions) tab
     await tester.tap(find.text('STATS'));

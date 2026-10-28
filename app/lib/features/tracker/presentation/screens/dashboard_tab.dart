@@ -21,30 +21,6 @@ class DashboardTab extends StatefulWidget {
 class _DashboardTabState extends State<DashboardTab> {
   TimePeriod _selectedPeriod = TimePeriod.month;
 
-  static const Map<String, Color> _categoryColorMap = {
-    'Food': Color(0xFF10B981),
-    'Groceries': Color(0xFF10B981),
-    'Transport': Color(0xFFF59E0B),
-    'Shopping': Color(0xFFEC4899),
-    'Bills': Color(0xFF3B82F6),
-    'Rent': Color(0xFF8B5CF6),
-    'Entertainment': Color(0xFFA855F7),
-    'Health': Color(0xFF06B6D4),
-    'Education': Color(0xFFEAB308),
-    'Salary': Color(0xFF10B981),
-    'Freelance': Color(0xFF3B82F6),
-    'Allowance': Color(0xFF06B6D4),
-    'Debt Repayment': Color(0xFFF59E0B),
-    'Other': Color(0xFF94A3B8),
-    'General': Color(0xFF64748B),
-  };
-
-  Color _getCategoryColor(String? category) {
-    if (category == null) return const Color(0xFF94A3B8);
-    return _categoryColorMap[category] ??
-        Color((category.hashCode & 0x00FFFFFF) | 0xFF000000);
-  }
-
   @override
   Widget build(BuildContext context) {
     final controller = TrackerController.to;
@@ -65,7 +41,6 @@ class _DashboardTabState extends State<DashboardTab> {
         final cashBalance = controller.cashBalance;
         final totalIncome = controller.totalIncome;
         final totalExpenses = controller.totalExpenses;
-        final adjustedBalance = controller.adjustedBalance;
         final recentTransactions = controller.recentTransactions;
 
         // Period-filtered data
@@ -80,9 +55,10 @@ class _DashboardTabState extends State<DashboardTab> {
           return CategorySpendingItem(
             category: entry.key,
             amount: entry.value,
-            color: _getCategoryColor(entry.key),
+            color: AppColors.getCategoryColor(entry.key),
           );
-        }).toList();
+        }).toList()
+          ..sort((a, b) => b.amount.compareTo(a.amount));
 
         return ScreenContainer(
           child: Column(
@@ -118,14 +94,6 @@ class _DashboardTabState extends State<DashboardTab> {
                         fontWeight: FontWeight.w800,
                         letterSpacing: -0.6,
                         color: Colors.white,
-                      ),
-                    ),
-                    Text(
-                      CurrencyFormatter.format(adjustedBalance),
-                      style: TextStyle(
-                        fontSize: 11.5,
-                        fontWeight: FontWeight.w500,
-                        color: Colors.white.withValues(alpha: 0.72),
                       ),
                     ),
                     const SizedBox(height: 12),
@@ -404,7 +372,11 @@ class _DashboardTabState extends State<DashboardTab> {
                   itemBuilder: (context, index) {
                     final tx = recentTransactions[index];
                     final isIncome = tx.isIncome;
-                    final categoryColor = _getCategoryColor(tx.tag);
+                    final txColor = AppColors.getTransactionColor(
+                      tag: tx.tag,
+                      title: tx.title,
+                      isIncome: isIncome,
+                    );
 
                     return BorderlessCard(
                       padding: const EdgeInsets.symmetric(
@@ -418,19 +390,14 @@ class _DashboardTabState extends State<DashboardTab> {
                             width: 34,
                             height: 34,
                             decoration: BoxDecoration(
-                              color: isIncome
-                                  ? const Color(0xFF10B981)
-                                        .withValues(alpha: 0.12)
-                                  : categoryColor.withValues(alpha: 0.12),
+                              color: txColor.withValues(alpha: 0.12),
                               borderRadius: BorderRadius.circular(8),
                             ),
                             child: Icon(
                               isIncome
                                   ? Icons.arrow_downward_rounded
                                   : Icons.arrow_upward_rounded,
-                              color: isIncome
-                                  ? const Color(0xFF10B981)
-                                  : categoryColor,
+                              color: txColor,
                               size: 16,
                             ),
                           ),
@@ -481,7 +448,7 @@ class _DashboardTabState extends State<DashboardTab> {
                                         style: TextStyle(
                                           fontSize: 11,
                                           fontWeight: FontWeight.w600,
-                                          color: categoryColor,
+                                          color: txColor,
                                         ),
                                       ),
                                     ],

@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
+import '../../features/ai/models/ai_message_model.dart';
 import '../models/debt_model.dart';
 import '../models/transaction_model.dart';
 import '../models/user_profile_model.dart';
@@ -11,6 +12,8 @@ class StorageService {
   static const String _keyUserProfile = 'mm_user_profile';
   static const String _keyAuthToken = 'mm_auth_jwt_token';
   static const String _keyLastUserId = 'mm_last_user_id';
+  static const String _keyLastSyncedAt = 'mm_last_synced_at';
+  static const String _keyChatSessions = 'mm_ai_chat_sessions';
 
   SharedPreferences? _prefs;
 
@@ -115,6 +118,39 @@ class StorageService {
   Future<bool> hasAuthToken() async {
     final token = await loadAuthToken();
     return token != null && token.isNotEmpty;
+  }
+
+  // --- Sync State ---
+  Future<DateTime?> loadLastSyncedAt() async {
+    await init();
+    final str = _prefs?.getString(_keyLastSyncedAt);
+    return str != null ? DateTime.tryParse(str) : null;
+  }
+
+  Future<void> saveLastSyncedAt(DateTime dateTime) async {
+    await init();
+    await _prefs?.setString(_keyLastSyncedAt, dateTime.toIso8601String());
+  }
+
+  // --- AI Chat Sessions History ---
+  Future<List<AiChatSessionModel>> loadChatSessions() async {
+    await init();
+    final jsonStr = _prefs?.getString(_keyChatSessions);
+    if (jsonStr == null || jsonStr.isEmpty) return [];
+    try {
+      final List<dynamic> list = jsonDecode(jsonStr) as List<dynamic>;
+      return list
+          .map((item) => AiChatSessionModel.fromJson(item as Map<String, dynamic>))
+          .toList();
+    } catch (_) {
+      return [];
+    }
+  }
+
+  Future<void> saveChatSessions(List<AiChatSessionModel> sessions) async {
+    await init();
+    final jsonStr = jsonEncode(sessions.map((s) => s.toJson()).toList());
+    await _prefs?.setString(_keyChatSessions, jsonStr);
   }
 
   /// Checks if the signed-in user is different from the last active user.

@@ -9,7 +9,6 @@ import '../../../../data/models/person_debt_model.dart';
 import '../../../sync/presentation/widgets/item_sync_dot.dart';
 import '../../controllers/tracker_controller.dart';
 import '../dialogs/add_debt_dialog.dart';
-import '../dialogs/record_repayment_dialog.dart';
 
 class PersonLedgerScreen extends StatelessWidget {
   const PersonLedgerScreen({
@@ -248,11 +247,11 @@ class PersonLedgerScreen extends StatelessWidget {
     if (summary.theyOweUser) {
       balanceColor = const Color(0xFF059669); // Emerald
       balanceLabel = 'They owe you in total';
-      balanceAmount = '+ ${CurrencyFormatter.format(summary.theyOweMe)}';
+      balanceAmount = '+ ${CurrencyFormatter.format(summary.netBalance.abs())}';
     } else if (summary.userOwesThem) {
       balanceColor = const Color(0xFFD97706); // Amber
       balanceLabel = 'You owe them in total';
-      balanceAmount = '- ${CurrencyFormatter.format(summary.iOweThem)}';
+      balanceAmount = '- ${CurrencyFormatter.format(summary.netBalance.abs())}';
     } else {
       balanceColor = const Color(0xFF059669);
       balanceLabel = 'All debts settled';
@@ -474,159 +473,188 @@ class PersonLedgerScreen extends StatelessWidget {
 
     return Padding(
       padding: const EdgeInsets.only(bottom: 10),
-      child: BorderlessCard(
-        padding: const EdgeInsets.all(14),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: isDebt
+              ? () => AddDebtDialog.show(
+                    context,
+                    personName: personName,
+                    debtToEdit: item.debt,
+                  )
+              : null,
+          borderRadius: BorderRadius.circular(16),
+          child: BorderlessCard(
+            padding: const EdgeInsets.all(14),
+            child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Type icon badge
-                Container(
-                  width: 34,
-                  height: 34,
-                  decoration: BoxDecoration(
-                    color: badgeColor.withValues(alpha: 0.12),
-                    shape: BoxShape.circle,
-                  ),
-                  child: Icon(icon, size: 17, color: badgeColor),
-                ),
-                AppSizes.gapW12,
-                // Title and details
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        children: [
-                          Expanded(
-                            child: Text(
-                              item.title,
-                              style: TextStyle(
-                                fontSize: 14,
-                                fontWeight: FontWeight.w600,
-                                color: colorScheme.onSurface,
-                              ),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          ),
-                          if (item.debt != null)
-                            ItemSyncDot(isSynced: item.debt!.isSynced),
-                        ],
-                      ),
-                      const SizedBox(height: 3),
-                      Row(
-                        children: [
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 6,
-                              vertical: 2,
-                            ),
-                            decoration: BoxDecoration(
-                              color: badgeColor.withValues(alpha: 0.1),
-                              borderRadius: BorderRadius.circular(6),
-                            ),
-                            child: Text(
-                              typeLabel,
-                              style: TextStyle(
-                                fontSize: 10.5,
-                                fontWeight: FontWeight.w600,
-                                color: badgeColor,
-                              ),
-                            ),
-                          ),
-                          const SizedBox(width: 8),
-                          Text(
-                            _formatDate(item.date),
-                            style: TextStyle(
-                              fontSize: 11,
-                              color: customColors.subtleText,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
-                AppSizes.gapW10,
-                // Amount
-                Text(
-                  '$prefix${CurrencyFormatter.format(item.amount)}',
-                  style: TextStyle(
-                    fontSize: 14.5,
-                    fontWeight: FontWeight.w700,
-                    color: badgeColor,
-                  ),
-                ),
-              ],
-            ),
-            if (item.note != null && item.note!.isNotEmpty) ...[
-              const SizedBox(height: 8),
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                decoration: BoxDecoration(
-                  color: isDark
-                      ? Colors.white.withValues(alpha: 0.04)
-                      : const Color(0xFFF8FAFC),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Text(
-                  item.note!,
-                  style: TextStyle(
-                    fontSize: 11.5,
-                    color: customColors.subtleText,
-                    fontStyle: FontStyle.italic,
-                  ),
-                ),
-              ),
-            ],
-            // If it's a debt item that still has balance remaining, show repayment button
-            if (isDebt && !item.debt!.isSettled) ...[
-              const SizedBox(height: 10),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(
-                    'Remaining: ${CurrencyFormatter.format(item.debt!.remainingAmount)}',
-                    style: TextStyle(
-                      fontSize: 11.5,
-                      fontWeight: FontWeight.w600,
-                      color: customColors.subtleText,
-                    ),
-                  ),
-                  InkWell(
-                    onTap: () => RecordRepaymentDialog.show(context, item.debt!),
-                    borderRadius: BorderRadius.circular(12),
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Type icon badge
+                    Container(
+                      width: 34,
+                      height: 34,
                       decoration: BoxDecoration(
-                        color: colorScheme.primary.withValues(alpha: 0.1),
-                        borderRadius: BorderRadius.circular(12),
+                        color: badgeColor.withValues(alpha: 0.12),
+                        shape: BoxShape.circle,
                       ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
+                      child: Icon(icon, size: 17, color: badgeColor),
+                    ),
+                    AppSizes.gapW12,
+                    // Title and details
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Icon(Icons.payment_rounded, size: 12, color: colorScheme.primary),
-                          const SizedBox(width: 4),
-                          Text(
-                            'Record Payment',
-                            style: TextStyle(
-                              fontSize: 11,
-                              fontWeight: FontWeight.w600,
-                              color: colorScheme.primary,
-                            ),
+                          Row(
+                            children: [
+                              Expanded(
+                                child: Text(
+                                  item.title,
+                                  style: TextStyle(
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w600,
+                                    color: colorScheme.onSurface,
+                                  ),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                              if (item.debt != null)
+                                ItemSyncDot(isSynced: item.debt!.isSynced),
+                            ],
+                          ),
+                          const SizedBox(height: 3),
+                          Row(
+                            children: [
+                              Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 6,
+                                  vertical: 2,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: badgeColor.withValues(alpha: 0.1),
+                                  borderRadius: BorderRadius.circular(6),
+                                ),
+                                child: Text(
+                                  typeLabel,
+                                  style: TextStyle(
+                                    fontSize: 10.5,
+                                    fontWeight: FontWeight.w600,
+                                    color: badgeColor,
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              Text(
+                                _formatDate(item.date),
+                                style: TextStyle(
+                                  fontSize: 11,
+                                  color: customColors.subtleText,
+                                ),
+                              ),
+                            ],
                           ),
                         ],
+                      ),
+                    ),
+                    AppSizes.gapW10,
+                    // Amount
+                    Text(
+                      '$prefix${CurrencyFormatter.format(item.amount)}',
+                      style: TextStyle(
+                        fontSize: 14.5,
+                        fontWeight: FontWeight.w700,
+                        color: badgeColor,
+                      ),
+                    ),
+                  ],
+                ),
+                if (item.note != null && item.note!.isNotEmpty) ...[
+                  const SizedBox(height: 8),
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                    decoration: BoxDecoration(
+                      color: isDark
+                          ? Colors.white.withValues(alpha: 0.04)
+                          : const Color(0xFFF8FAFC),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Text(
+                      item.note!,
+                      style: TextStyle(
+                        fontSize: 11.5,
+                        color: customColors.subtleText,
+                        fontStyle: FontStyle.italic,
                       ),
                     ),
                   ),
                 ],
-              ),
-            ],
-          ],
+                // Debt status footer (tap to edit)
+                if (isDebt) ...[
+                  const SizedBox(height: 10),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                        decoration: BoxDecoration(
+                          color: (item.debt!.isSettled
+                                  ? const Color(0xFF059669)
+                                  : const Color(0xFFD97706))
+                              .withValues(alpha: 0.12),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              item.debt!.isSettled
+                                  ? Icons.check_circle_rounded
+                                  : Icons.pending_outlined,
+                              size: 12,
+                              color: item.debt!.isSettled
+                                  ? const Color(0xFF059669)
+                                  : const Color(0xFFD97706),
+                            ),
+                            const SizedBox(width: 4),
+                            Text(
+                              item.debt!.isSettled ? 'Settled' : 'Unsettled / Active',
+                              style: TextStyle(
+                                fontSize: 11,
+                                fontWeight: FontWeight.w600,
+                                color: item.debt!.isSettled
+                                  ? const Color(0xFF059669)
+                                  : const Color(0xFFD97706),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(
+                            'Edit',
+                            style: TextStyle(
+                              fontSize: 11,
+                              fontWeight: FontWeight.w600,
+                              color: customColors.subtleText,
+                            ),
+                          ),
+                          const SizedBox(width: 2),
+                          Icon(Icons.chevron_right_rounded, size: 14, color: customColors.subtleText),
+                        ],
+                      ),
+                    ],
+                  ),
+                ],
+              ],
+            ),
+          ),
         ),
       ),
     );

@@ -41,7 +41,6 @@ class PersonLedgerItem {
   final double amount;
   final DateTime date;
   final String? note;
-  final bool affectsCashBalance;
   final bool isSettled;
   final DebtModel? debt;
   final DebtRepaymentModel? repayment;
@@ -54,7 +53,6 @@ class PersonLedgerItem {
     required this.amount,
     required this.date,
     this.note,
-    this.affectsCashBalance = true,
     this.isSettled = false,
     this.debt,
     this.repayment,

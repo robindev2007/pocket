@@ -116,12 +116,26 @@ class _DonutChartPainter extends CustomPainter {
       return;
     }
 
-    double startAngle = -pi / 2;
-    const gapAngle = 0.04; // subtle gap between segments for modern clean look
-
     final validItems = items.where((e) => e.amount > 0).toList();
     final totalValidAmount =
         validItems.fold(0.0, (sum, item) => sum + item.amount);
+
+    if (totalValidAmount <= 0) {
+      canvas.drawCircle(center, radius, paintBase..color = emptyTrackColor);
+      return;
+    }
+
+    if (validItems.length == 1) {
+      final singlePaint = Paint()
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = strokeWidth
+        ..color = validItems.first.color;
+      canvas.drawCircle(center, radius, singlePaint);
+      return;
+    }
+
+    double startAngle = -pi / 2;
+    const gapAngle = 0.04; // subtle gap between segments for modern clean look
 
     for (final item in validItems) {
       final sweepAngle = (item.amount / totalValidAmount) * 2 * pi;

@@ -40,8 +40,8 @@ class SyncApiService {
     }
   }
 
-  /// Uploads a single transaction to the cloud server
-  Future<bool> uploadTransaction(TransactionModel tx, String token) async {
+  /// Uploads a single transaction to the cloud server, returning the server ID
+  Future<String?> uploadTransaction(TransactionModel tx, String token) async {
     try {
       final uri = Uri.parse('${ApiConstants.baseUrl}/transactions');
       final response = await _client
@@ -59,9 +59,15 @@ class SyncApiService {
           )
           .timeout(_timeout);
 
-      return response.statusCode >= 200 && response.statusCode < 300;
+      if (response.statusCode >= 200 && response.statusCode < 300) {
+        final Map<String, dynamic> body =
+            jsonDecode(response.body) as Map<String, dynamic>;
+        final data = body['data'] as Map<String, dynamic>?;
+        return data?['id'] as String? ?? tx.id;
+      }
+      return null;
     } catch (_) {
-      return false;
+      return null;
     }
   }
 
@@ -112,7 +118,6 @@ class SyncApiService {
               'amount': rep.amount,
               'date': rep.date.toIso8601String(),
               if (rep.note != null) 'note': rep.note,
-              'affectsCashBalance': rep.affectsCashBalance,
             }),
           )
           .timeout(_timeout);

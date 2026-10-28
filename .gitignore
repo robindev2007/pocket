@@ -62,3 +62,4 @@ yarn-error.log*
 
 
 .vercel
+mock_data.json

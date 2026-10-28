@@ -12,7 +12,6 @@ class DebtRepaymentModel {
     required this.amount,
     required this.date,
     this.note,
-    this.affectsCashBalance = true,
     this.isSynced = false,
   });
 
@@ -20,7 +19,6 @@ class DebtRepaymentModel {
   final double amount;
   final DateTime date;
   final String? note;
-  final bool affectsCashBalance;
   final bool isSynced;
 
   DebtRepaymentModel copyWith({
@@ -28,7 +26,6 @@ class DebtRepaymentModel {
     double? amount,
     DateTime? date,
     String? note,
-    bool? affectsCashBalance,
     bool? isSynced,
   }) {
     return DebtRepaymentModel(
@@ -36,7 +33,6 @@ class DebtRepaymentModel {
       amount: amount ?? this.amount,
       date: date ?? this.date,
       note: note ?? this.note,
-      affectsCashBalance: affectsCashBalance ?? this.affectsCashBalance,
       isSynced: isSynced ?? this.isSynced,
     );
   }
@@ -47,7 +43,6 @@ class DebtRepaymentModel {
       'amount': amount,
       'date': date.toIso8601String(),
       'note': note,
-      'affectsCashBalance': affectsCashBalance,
       'isSynced': isSynced,
     };
   }
@@ -58,7 +53,6 @@ class DebtRepaymentModel {
       amount: (json['amount'] as num).toDouble(),
       date: DateTime.parse(json['date'] as String),
       note: json['note'] as String?,
-      affectsCashBalance: json['affectsCashBalance'] as bool? ?? true,
       isSynced: json['isSynced'] as bool? ?? false,
     );
   }
@@ -93,7 +87,8 @@ class DebtModel {
   double get totalRepaid =>
       repayments.fold(0.0, (sum, item) => sum + item.amount);
 
-  double get remainingAmount => (amount - totalRepaid).clamp(0.0, double.infinity);
+  double get remainingAmount =>
+      (amount - totalRepaid).clamp(0.0, double.infinity);
 
   bool get isSettled => remainingAmount <= 0.001;
 
@@ -136,6 +131,12 @@ class DebtModel {
   }
 
   factory DebtModel.fromJson(Map<String, dynamic> json) {
+    final repaymentsList = (json['repayments'] as List<dynamic>?)
+            ?.map((item) =>
+                DebtRepaymentModel.fromJson(item as Map<String, dynamic>))
+            .toList() ??
+        [];
+
     return DebtModel(
       id: json['id'] as String,
       personName: json['personName'] as String,
@@ -146,11 +147,7 @@ class DebtModel {
               json['direction'] == 'LENT')
           ? DebtDirection.theyOweMe
           : DebtDirection.iOweThem,
-      repayments: (json['repayments'] as List<dynamic>?)
-              ?.map((item) =>
-                  DebtRepaymentModel.fromJson(item as Map<String, dynamic>))
-              .toList() ??
-          [],
+      repayments: repaymentsList,
       note: json['note'] as String?,
       isSynced: json['isSynced'] as bool? ?? false,
     );

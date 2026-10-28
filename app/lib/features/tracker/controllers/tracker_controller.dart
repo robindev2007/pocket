@@ -119,9 +119,6 @@ class TrackerController extends GetxController {
       .where((d) => d.isIOweThem && !d.isSettled)
       .fold(0.0, (sum, d) => sum + d.remainingAmount);
 
-  /// Calculation: Cash balance + money owed to me - money I owe others
-  double get adjustedBalance => cashBalance + totalOwedToMe - totalIOwe;
-
   List<TransactionModel> get sortedTransactions {
     final list = List<TransactionModel>.from(transactions);
     list.sort((a, b) => b.date.compareTo(a.date));
@@ -332,7 +329,6 @@ class TrackerController extends GetxController {
           amount: d.amount,
           date: d.date,
           note: d.note,
-          affectsCashBalance: true,
           isSettled: d.isSettled,
           debt: d,
         ),
@@ -350,7 +346,6 @@ class TrackerController extends GetxController {
             amount: r.amount,
             date: r.date,
             note: r.note,
-            affectsCashBalance: r.affectsCashBalance,
             debt: d,
             repayment: r,
           ),
@@ -389,7 +384,6 @@ class TrackerController extends GetxController {
           amount: debt.remainingAmount,
           date: DateTime.now(),
           note: 'Full settlement',
-          affectsCashBalance: true,
         );
       }
     }
@@ -427,12 +421,25 @@ class TrackerController extends GetxController {
     _triggerSync();
   }
 
+  Future<void> updateDebt(DebtModel updated) async {
+    final index = debts.indexWhere((d) => d.id == updated.id);
+    if (index == -1) return;
+    debts[index] = updated.copyWith(isSynced: false);
+    await _storageService.saveDebts(debts);
+    _triggerSync();
+  }
+
+  Future<void> deleteDebt(String id) async {
+    debts.removeWhere((d) => d.id == id);
+    await _storageService.saveDebts(debts);
+    _triggerSync();
+  }
+
   Future<void> recordRepayment({
     required String debtId,
     required double amount,
     required DateTime date,
     String? note,
-    bool affectsCashBalance = true,
   }) async {
     final index = debts.indexWhere((d) => d.id == debtId);
     if (index == -1) return;
@@ -443,45 +450,13 @@ class TrackerController extends GetxController {
       amount: amount,
       date: date,
       note: note?.trim().isEmpty ?? true ? null : note?.trim(),
-      affectsCashBalance: affectsCashBalance,
       isSynced: false,
     );
 
     final updatedRepayments = List<DebtRepaymentModel>.from(targetDebt.repayments)..add(repayment);
-    final updatedDebt = targetDebt.copyWith(repayments: updatedRepayments, isSynced: false);
-    debts[index] = updatedDebt;
+    debts[index] = targetDebt.copyWith(repayments: updatedRepayments, isSynced: false);
     await _storageService.saveDebts(debts);
     _triggerSync();
-
-    // If repayment was in cash, record corresponding cash transaction
-    if (affectsCashBalance) {
-      if (targetDebt.isTheyOweMe) {
-        // Someone paid me cash -> Cash Balance increases (Income)
-        await addTransaction(
-          title: 'Repayment from ${targetDebt.personName}',
-          amount: amount,
-          type: TransactionType.income,
-          date: date,
-          tag: 'Debt Repayment',
-          note: 'Repayment for "${targetDebt.title}"',
-        );
-      } else {
-        // I paid someone cash -> Cash Balance decreases (Expense)
-        await addTransaction(
-          title: 'Repayment to ${targetDebt.personName}',
-          amount: amount,
-          type: TransactionType.expense,
-          date: date,
-          tag: 'Debt Repayment',
-          note: 'Repayment for "${targetDebt.title}"',
-        );
-      }
-    }
-  }
-
-  Future<void> deleteDebt(String id) async {
-    debts.removeWhere((d) => d.id == id);
-    await _storageService.saveDebts(debts);
   }
 
   // --- Data Backup / Restore ---

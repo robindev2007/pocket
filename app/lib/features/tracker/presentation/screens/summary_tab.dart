@@ -23,8 +23,6 @@ class SummaryTab extends StatelessWidget {
         final totalIncome = controller.totalIncome;
         final totalExpenses = controller.totalExpenses;
         final netCashflow = totalIncome - totalExpenses;
-        final totalOwedToMe = controller.totalOwedToMe;
-        final totalIOwe = controller.totalIOwe;
         final spendingByTag = controller.spendingByTag;
 
         return ScreenContainer(
@@ -98,6 +96,7 @@ class SummaryTab extends StatelessWidget {
                   child: Column(
                     children: spendingByTag.entries.map((entry) {
                       final percentage = totalExpenses > 0 ? (entry.value / totalExpenses) : 0.0;
+                      final categoryColor = AppColors.getCategoryColor(entry.key);
                       return Padding(
                         padding: const EdgeInsets.symmetric(vertical: 8),
                         child: Column(
@@ -106,13 +105,26 @@ class SummaryTab extends StatelessWidget {
                             Row(
                               mainAxisAlignment: MainAxisAlignment.spaceBetween,
                               children: [
-                                Text(
-                                  entry.key,
-                                  style: TextStyle(
-                                    fontSize: 13.5,
-                                    fontWeight: FontWeight.w600,
-                                    color: colorScheme.onSurface,
-                                  ),
+                                Row(
+                                  children: [
+                                    Container(
+                                      width: 8,
+                                      height: 8,
+                                      decoration: BoxDecoration(
+                                        color: categoryColor,
+                                        shape: BoxShape.circle,
+                                      ),
+                                    ),
+                                    const SizedBox(width: 8),
+                                    Text(
+                                      entry.key,
+                                      style: TextStyle(
+                                        fontSize: 13.5,
+                                        fontWeight: FontWeight.w600,
+                                        color: colorScheme.onSurface,
+                                      ),
+                                    ),
+                                  ],
                                 ),
                                 Text(
                                   '${CurrencyFormatter.format(entry.value)} (${(percentage * 100).toStringAsFixed(1)}%)',
@@ -131,7 +143,7 @@ class SummaryTab extends StatelessWidget {
                                 value: percentage,
                                 minHeight: 6,
                                 backgroundColor: customColors.surfaceHover,
-                                valueColor: AlwaysStoppedAnimation<Color>(colorScheme.primary),
+                                valueColor: AlwaysStoppedAnimation<Color>(categoryColor),
                               ),
                             ),
                           ],
@@ -140,48 +152,6 @@ class SummaryTab extends StatelessWidget {
                     }).toList(),
                   ),
                 ),
-              AppSizes.gapH24,
-
-              // 3. OUTSTANDING DEBTS SUMMARY
-              Text(
-                'Outstanding Debts Summary',
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w700,
-                  color: colorScheme.onSurface,
-                ),
-              ),
-              AppSizes.gapH12,
-
-              BorderlessCard(
-                child: Column(
-                  children: [
-                    _SummaryRow(
-                      title: 'People Owe You',
-                      amountText: CurrencyFormatter.format(totalOwedToMe),
-                      color: const Color(0xFF059669),
-                      icon: Icons.call_received_rounded,
-                    ),
-                    const Divider(height: 20),
-                    _SummaryRow(
-                      title: 'You Owe Others',
-                      amountText: CurrencyFormatter.format(totalIOwe),
-                      color: const Color(0xFFD97706),
-                      icon: Icons.call_made_rounded,
-                    ),
-                    const Divider(height: 20),
-                    _SummaryRow(
-                      title: 'Net Debt Balance',
-                      amountText: CurrencyFormatter.format(totalOwedToMe - totalIOwe),
-                      color: (totalOwedToMe - totalIOwe) >= 0
-                          ? const Color(0xFF059669)
-                          : const Color(0xFFD97706),
-                      icon: Icons.account_balance_wallet_outlined,
-                      isBold: true,
-                    ),
-                  ],
-                ),
-              ),
               AppSizes.gapH24,
 
               // 4. DATA BACKUP & LOCAL STORAGE

@@ -13,15 +13,18 @@ class AddDebtDialog extends StatefulWidget {
     super.key,
     required this.personName,
     this.initialDirection = DebtDirection.theyOweMe,
+    this.debtToEdit,
   });
 
   final String personName;
   final DebtDirection initialDirection;
+  final DebtModel? debtToEdit;
 
   static Future<void> show(
     BuildContext context, {
     required String personName,
     DebtDirection initialDirection = DebtDirection.theyOweMe,
+    DebtModel? debtToEdit,
   }) {
     return showModalBottomSheet(
       context: context,
@@ -30,6 +33,7 @@ class AddDebtDialog extends StatefulWidget {
       builder: (context) => AddDebtDialog(
         personName: personName,
         initialDirection: initialDirection,
+        debtToEdit: debtToEdit,
       ),
     );
   }
@@ -47,6 +51,8 @@ class _AddDebtDialogState extends State<AddDebtDialog> {
   late DateTime _selectedDate;
   String? _titleError;
   String? _amountError;
+
+  bool get isEditing => widget.debtToEdit != null;
 
   // Validation schema without person field
   static final _debtSchema = l.schema({
@@ -71,12 +77,19 @@ class _AddDebtDialogState extends State<AddDebtDialog> {
   @override
   void initState() {
     super.initState();
-    _selectedDirection = widget.initialDirection;
-    _selectedDate = DateTime.now();
+    final d = widget.debtToEdit;
+    _selectedDirection = d?.direction ?? widget.initialDirection;
+    _selectedDate = d?.date ?? DateTime.now();
 
-    _titleController = TextEditingController();
-    _amountController = TextEditingController();
-    _noteController = TextEditingController();
+    _titleController = TextEditingController(text: d?.title ?? '');
+    _amountController = TextEditingController(
+      text: d != null
+          ? (d.amount.truncateToDouble() == d.amount
+              ? d.amount.toInt().toString()
+              : d.amount.toStringAsFixed(2))
+          : '',
+    );
+    _noteController = TextEditingController(text: d?.note ?? '');
   }
 
   @override
@@ -129,14 +142,25 @@ class _AddDebtDialogState extends State<AddDebtDialog> {
         ? _noteController.text.trim()
         : null;
 
-    TrackerController.to.addDebt(
-      personName: widget.personName,
-      title: title,
-      amount: parsedAmount,
-      date: _selectedDate,
-      direction: _selectedDirection,
-      note: note,
-    );
+    if (isEditing) {
+      final updated = widget.debtToEdit!.copyWith(
+        title: title,
+        amount: parsedAmount,
+        date: _selectedDate,
+        direction: _selectedDirection,
+        note: note,
+      );
+      TrackerController.to.updateDebt(updated);
+    } else {
+      TrackerController.to.addDebt(
+        personName: widget.personName,
+        title: title,
+        amount: parsedAmount,
+        date: _selectedDate,
+        direction: _selectedDirection,
+        note: note,
+      );
+    }
 
     Navigator.pop(context);
   }
@@ -181,9 +205,11 @@ class _AddDebtDialogState extends State<AddDebtDialog> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        _selectedDirection == DebtDirection.theyOweMe
-                            ? 'Record Loan Given'
-                            : 'Record Money Borrowed',
+                        isEditing
+                            ? 'Edit Debt / Loan'
+                            : (_selectedDirection == DebtDirection.theyOweMe
+                                ? 'Record Loan Given'
+                                : 'Record Money Borrowed'),
                         style: TextStyle(
                           fontSize: 18,
                           fontWeight: FontWeight.w700,
@@ -213,6 +239,15 @@ class _AddDebtDialogState extends State<AddDebtDialog> {
                     ],
                   ),
                 ),
+                if (isEditing)
+                  IconButton(
+                    icon: const Icon(Icons.delete_outline_rounded, color: Colors.red, size: 20),
+                    tooltip: 'Delete Debt',
+                    onPressed: () {
+                      TrackerController.to.deleteDebt(widget.debtToEdit!.id);
+                      Navigator.pop(context);
+                    },
+                  ),
                 IconButton(
                   icon: const Icon(Icons.close_rounded, size: 20),
                   onPressed: () => Navigator.pop(context),
@@ -347,11 +382,12 @@ class _AddDebtDialogState extends State<AddDebtDialog> {
               hint: 'Additional terms or memo...',
               maxLines: 2,
             ),
+            AppSizes.gapH16,
 
             AppSizes.gapH24,
 
             AppButton(
-              text: 'Save Debt Entry',
+              text: isEditing ? 'Save Changes' : 'Save Debt Entry',
               isFullWidth: true,
               onPressed: _submit,
             ),

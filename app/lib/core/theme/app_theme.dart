@@ -59,6 +59,8 @@ class AppTheme {
       onError: Colors.white,
       surface: surface,
       onSurface: isDark ? const Color(0xFFF8FAFC) : const Color(0xFF0F172A),
+      outline: cardBorder,
+      outlineVariant: cardBorder,
     );
 
     final customColors = AppCustomColors(
@@ -83,6 +85,11 @@ class AppTheme {
       scaffoldBackgroundColor: scaffoldBg,
       cardColor: surface,
       dividerColor: cardBorder,
+      dividerTheme: DividerThemeData(
+        color: cardBorder,
+        thickness: 1,
+        space: 1,
+      ),
       appBarTheme: AppBarTheme(
         backgroundColor: Colors.transparent,
         foregroundColor: colorScheme.onSurface,

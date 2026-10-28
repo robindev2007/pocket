@@ -5,6 +5,7 @@ import { transactionsRouter } from './transactions/transactions.route';
 import { debtsRouter } from './debts/debts.route';
 import { peopleRouter } from './people/people.route';
 import { syncRouter } from './sync/sync.route';
+import { aiRouter } from './ai/ai.route';
 import { errorMiddleware, loggerMiddleware, notFoundMiddleware } from './common/middleware';
 
 // Safely serialize BigInt to string in JSON responses
@@ -14,6 +15,19 @@ import { errorMiddleware, loggerMiddleware, notFoundMiddleware } from './common/
 
 export const createApp = (): Application => {
   const app = express();
+
+  // CORS Middleware for Web and Local Development
+  app.use((req, res, next) => {
+    res.header('Access-Control-Allow-Origin', req.headers.origin || '*');
+    res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, PATCH, DELETE, OPTIONS');
+    res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With');
+    res.header('Access-Control-Allow-Credentials', 'true');
+    if (req.method === 'OPTIONS') {
+      res.sendStatus(204);
+      return;
+    }
+    next();
+  });
 
   // Core Middlewares
   app.use(loggerMiddleware);
@@ -44,6 +58,7 @@ export const createApp = (): Application => {
   app.use('/debts', debtsRouter);
   app.use('/people', peopleRouter);
   app.use('/sync', syncRouter);
+  app.use('/ai', aiRouter);
 
   // 404 Not Found Middleware (catches unhandled routes)
   app.use(notFoundMiddleware);

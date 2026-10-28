@@ -61,11 +61,11 @@ void main() {
   });
 
   group('SyncApiService Tests', () {
-    test('uploadTransaction returns true on 201 Created', () async {
+    test('uploadTransaction returns server ID on 201 Created', () async {
       final mockClient = MockClient((request) async {
         expect(request.url.path, '/transactions');
         expect(request.headers['Authorization'], 'Bearer mock-token-123');
-        return http.Response('{"success": true, "data": {}}', 201);
+        return http.Response('{"success": true, "data": {"id": "tx-123"}}', 201);
       });
 
       final service = SyncApiService(client: mockClient);
@@ -78,7 +78,7 @@ void main() {
       );
 
       final success = await service.uploadTransaction(tx, 'mock-token-123');
-      expect(success, isTrue);
+      expect(success, 'tx-123');
     });
 
     test('uploadDebt returns debt ID on 201 Created', () async {
@@ -101,7 +101,7 @@ void main() {
       expect(id, 'server-debt-99');
     });
 
-    test('uploadTransaction returns false on 500 server error', () async {
+    test('uploadTransaction returns null on 500 server error', () async {
       final mockClient = MockClient((request) async {
         return http.Response('{"error": "Internal Server Error"}', 500);
       });
@@ -116,10 +116,10 @@ void main() {
       );
 
       final success = await service.uploadTransaction(tx, 'mock-token-123');
-      expect(success, isFalse);
+      expect(success, isNull);
     });
 
-    test('uploadTransaction returns false on network exception', () async {
+    test('uploadTransaction returns null on network exception', () async {
       final mockClient = MockClient((request) async {
         throw http.ClientException('Connection refused');
       });
@@ -134,7 +134,7 @@ void main() {
       );
 
       final success = await service.uploadTransaction(tx, 'mock-token-123');
-      expect(success, isFalse);
+      expect(success, isNull);
     });
 
     test('uploadDebt returns null on 401 Unauthorized or network failure', () async {

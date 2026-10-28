@@ -2,7 +2,7 @@ class ApiConstants {
   ApiConstants._();
 
   /// Production API base URL: https://pocket-api.robinmia.com
-  static const String defaultBaseUrl = 'https://pocket-api.robinmia.com';
+  static const String defaultBaseUrl = 'http://localhost:3000';
 
   /// Default API base URL.
   /// Can be overridden at build/runtime with:
