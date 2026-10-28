@@ -18,6 +18,20 @@ class AuthApiService {
 
   AuthApiService({http.Client? client}) : _client = client ?? http.Client();
 
+  /// Retrieves Google OAuth Web Client ID dynamically from backend server
+  Future<String?> getGoogleClientId() async {
+    try {
+      final uri = Uri.parse(ApiConstants.authConfig);
+      final response = await _client.get(uri).timeout(const Duration(seconds: 5));
+      if (response.statusCode >= 200 && response.statusCode < 300) {
+        final body = jsonDecode(response.body) as Map<String, dynamic>;
+        final data = body['data'] as Map<String, dynamic>?;
+        return data?['googleClientId'] as String?;
+      }
+    } catch (_) {}
+    return null;
+  }
+
   /// Exchanges a Google ID Token with backend server for an app JWT and user profile
   Future<AuthResult> signInWithGoogle(String idToken) async {
     final uri = Uri.parse(ApiConstants.authGoogle);

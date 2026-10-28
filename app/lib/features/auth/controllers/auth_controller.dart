@@ -29,9 +29,11 @@ class AuthController extends GetxController {
 
   Future<void> _initGoogleSignIn() async {
     try {
-      final serverClientId = ApiConstants.googleServerClientId;
+      final serverClientId = await _apiService.getGoogleClientId();
       await GoogleSignIn.instance.initialize(
-        serverClientId: serverClientId.isNotEmpty ? serverClientId : null,
+        serverClientId: (serverClientId != null && serverClientId.isNotEmpty)
+            ? serverClientId
+            : null,
       );
       _isGoogleSignInInitialized = true;
     } catch (_) {
@@ -90,8 +92,7 @@ class AuthController extends GetxController {
       if (idToken == null || idToken.isEmpty) {
         throw Exception(
           'Google did not return an ID token. Make sure a Web OAuth Client ID '
-          'is configured in ApiConstants.googleServerClientId or via '
-          '--dart-define=GOOGLE_CLIENT_ID=<YOUR_WEB_CLIENT_ID>',
+          'is configured on the backend server or in server .env.',
         );
       }
 
