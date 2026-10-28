@@ -168,8 +168,8 @@ class LineChartWidget extends StatelessWidget {
             lineTouchData: LineTouchData(
               enabled: true,
               touchSpotThreshold: 12,
-              getTouchLineStart: (_, __) => 0,
-              getTouchLineEnd: (_, __) => double.infinity,
+              getTouchLineStart: (_, _) => 0,
+              getTouchLineEnd: (_, _) => double.infinity,
               getTouchedSpotIndicator: (LineChartBarData barData, List<int> spotIndexes) {
                 return spotIndexes.map((index) {
                   return TouchedSpotIndicatorData(

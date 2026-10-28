@@ -5,7 +5,6 @@ import '../../../../core/theme/theme.dart';
 import '../../../auth/controllers/auth_controller.dart';
 import '../../../ai/presentation/screens/ai_chat_screen.dart';
 import '../../../sync/controllers/sync_controller.dart';
-import '../../../sync/presentation/widgets/sync_status_badge.dart';
 import '../../controllers/tracker_controller.dart';
 import '../dialogs/welcome_name_dialog.dart';
 import 'dashboard_tab.dart';

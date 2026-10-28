@@ -380,7 +380,7 @@ class _TransactionsTabState extends State<TransactionsTab> {
                               scale: 0.8,
                               child: Switch.adaptive(
                                 value: _showCategoryBreakdown,
-                                activeColor: colorScheme.primary,
+                                activeTrackColor: colorScheme.primary,
                                 onChanged: (val) => setState(
                                   () => _showCategoryBreakdown = val,
                                 ),

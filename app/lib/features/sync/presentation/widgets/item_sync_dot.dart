@@ -1,7 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:get/get.dart';
-import '../../../auth/controllers/auth_controller.dart';
-import '../../controllers/sync_controller.dart';
 
 class ItemSyncDot extends StatelessWidget {
   const ItemSyncDot({

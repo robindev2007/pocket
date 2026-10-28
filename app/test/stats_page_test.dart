@@ -6,7 +6,6 @@ import 'package:manage_money/core/theme/theme.dart';
 import 'package:manage_money/core/widgets/widgets.dart';
 import 'package:manage_money/data/models/transaction_model.dart';
 import 'package:manage_money/features/tracker/tracker.dart';
-import 'package:manage_money/features/tracker/presentation/screens/transactions_tab.dart';
 
 void main() {
   setUp(() {

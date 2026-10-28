@@ -617,7 +617,7 @@ class _AiChatScreenState extends State<AiChatScreen> {
                 return ListView.separated(
                   padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
                   itemCount: sessions.length,
-                  separatorBuilder: (_, __) => const SizedBox(height: 6),
+                  separatorBuilder: (_, _) => const SizedBox(height: 6),
                   itemBuilder: (context, index) {
                     final session = sessions[index];
                     final isActive = aiController.activeSessionId.value == session.id;

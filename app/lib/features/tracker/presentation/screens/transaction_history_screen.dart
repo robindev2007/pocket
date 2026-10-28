@@ -58,8 +58,10 @@ class _TransactionHistoryScreenState extends State<TransactionHistoryScreen> {
   }
 
   void _loadMore() {
+    _isLoadingMore = true;
     setState(() {
       _displayedCount += _pageSize;
+      _isLoadingMore = false;
     });
   }
 

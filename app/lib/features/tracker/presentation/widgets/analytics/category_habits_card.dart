@@ -32,7 +32,6 @@ class CategoryHabitsCard extends StatelessWidget {
 
     final catMap = <String, double>{};
     double weekdaySpend = 0.0;
-    double weekendSpend = 0.0;
 
     for (final t in monthExpenses) {
       final cat = (t.tag != null && t.tag!.trim().isNotEmpty)
@@ -42,8 +41,6 @@ class CategoryHabitsCard extends StatelessWidget {
 
       if (t.date.weekday <= 5) {
         weekdaySpend += t.amount;
-      } else {
-        weekendSpend += t.amount;
       }
     }
 
